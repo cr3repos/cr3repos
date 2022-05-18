@@ -1,0 +1,813 @@
+.card-right{
+  border-right: 1px solid rgba(0, 0, 0, 0.4);
+}
+body {
+    background-color: #f9f9fa
+}
+.flex {
+    -webkit-box-flex: 1;
+    -ms-flex: 1 1 auto;
+    flex: 1 1 auto
+}
+.qr-image{
+  width:100%;
+}
+
+@media (max-width:991.98px) {
+    .padding {
+        padding: 1.5rem
+    }
+}
+
+@media (max-width:767.98px) {
+    .padding {
+        padding: 1rem
+    }
+}
+
+.padding {
+    padding: 5rem
+}
+
+.coin-icon{
+  width: 40%
+}
+
+
+.card {
+    background: #fff;
+    border-width: 0;
+    border-radius: .25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+    margin-bottom: 1.5rem
+}
+
+.card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    word-wrap: break-word;
+    background-color: #fff;
+    background-clip: border-box;
+    border: 1px solid rgba(19, 24, 44, .125);
+    border-radius: .25rem
+}
+
+.card-header {
+    padding: .75rem 1.25rem;
+    margin-bottom: 0;
+    background-color: rgba(19, 24, 44, .03);
+    border-bottom: 1px solid rgba(19, 24, 44, .125)
+}
+
+.card-header:first-child {
+    border-radius: calc(.25rem - 1px) calc(.25rem - 1px) 0 0
+}
+card-footer,
+.card-header {
+    background-color: transparent;
+    border-color: rgba(160, 175, 185, .15);
+    background-clip: padding-box
+}
+.dashboard-logo{
+  width: 15%;
+}
+.multigraph {
+  width: 200px;
+  height: 120px;
+  margin-left: 20%
+}
+.multigraph:before {
+  content: '';
+    width: 200px;
+    height: 100px;
+  position: absolute;
+  border: 30px solid rgba(0,0,0,0.1);
+  border-radius: 300px 300px 0 0;
+  border-bottom: none;
+}
+.custom-input-right{
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+.custom-input-left{
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+.tooltip {
+  width: 80px;
+  height: 30px;
+  background: lightgrey;
+  text-align: center;
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 200;
+  color: #000;
+  border: 1px solid #grey;
+  position: absolute;
+  left: 50%;
+  bottom: -40px;
+  margin: -40px;
+  transition: all 300ms ease-in-out;
+  box-shadow: 0 0 5px grey;
+  opacity: 0;
+  transform: scale(.1);
+}
+
+
+ .multigraph:hover .tooltip {
+  bottom: 30%;
+  opacity: .8;
+  transform: scale(1);
+}
+/* 25 */
+.graph-25 {
+  width: 200px;
+  height: 100px;
+  position: absolute;
+  overflow:hidden;
+
+}
+.vertical-menu {
+  border-radius: 7px;
+  width: 100%;
+  height: 300px;
+  overflow-y: scroll;
+  text-align: center;
+
+
+}
+.vertical-menu-admin{
+  border-radius: 7px;
+  width: 100%;
+  height: 430px;
+  overflow-y: scroll;
+  text-align: center;
+}
+.vertical-menu-2 {
+  border-radius: 7px;
+  width: 100%;
+  height: 450px;
+  overflow-y: scroll;
+  text-align: center;
+
+
+}
+.vertical-menu-3 {
+  border-radius: 7px;
+  width: 100%;
+  height: 400px;
+  overflow-y: scroll;
+  text-align: center;
+}
+
+.vertical-menu-message {
+  border-radius: 7px;
+  width: 100%;
+  height: 420px;
+  overflow-y: scroll;
+  text-align: center;
+
+
+}
+::-webkit-scrollbar{
+    display: inherit;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.graph-25:before, .graph-25:after {
+  width: 200px;
+  height: 100px;
+  position: absolute;
+  top: 100%;
+  border: 25px solid #5463FF;
+  content: '';
+  border-radius:0 0 300px 300px;
+  border-top: none;
+  animation: demo 3s;
+  transform-origin: center top;
+}
+.graph-bar-10:after {
+  transform: rotate(10deg);
+}
+
+.graph-bar-20:after {
+  transform: rotate(20deg);
+}
+
+.graph-bar-30:after {
+  transform: rotate(30deg);
+}
+
+.graph-bar-40:after {
+  transform: rotate(40deg);
+}
+
+.graph-bar-50:after {
+  transform: rotate(50deg);
+}
+
+.graph-bar-60:after {
+  transform: rotate(60deg);
+}
+
+.graph-bar-70:after {
+  transform: rotate(65deg);
+}
+
+.graph-bar-80:after {
+  transform: rotate(70deg);
+}
+.graph-bar-90:after {
+  transform: rotate(80deg);
+}
+
+.graph-bar-100:after {
+  transform: rotate(90deg);
+}
+
+.graph-bar-110:after {
+  transform: rotate(100deg);
+}
+
+.graph-bar-120:after {
+  transform: rotate(110deg);
+}
+.graph-bar-130:after {
+  transform: rotate(120deg);
+}
+.graph-bar-140:after {
+  transform: rotate(130deg);
+}
+.graph-bar-150:after {
+  transform: rotate(140deg);
+}
+.graph-bar-160:after {
+  transform: rotate(150deg);
+}
+.graph-bar-170:after {
+  transform: rotate(155deg);
+}
+.graph-bar-180:after {
+  transform: rotate(160deg);
+}
+.graph-bar-190:after {
+  transform: rotate(170deg);
+}
+.graph-bar-200:after {
+  transform: rotate(180deg);
+}
+
+
+
+/* 50 */
+.graph-50 {
+  width: 200px;
+  height: 100px;
+  position: absolute;
+  overflow:hidden;
+
+}
+.graph-50:before, .graph-50:after {
+  width: 200px;
+  height: 100px;
+  position: absolute;
+  top: 100%;
+  border: 25px solid #4D96FF;
+  content: '';
+  border-radius:0 0 300px 300px;
+  border-top: none;
+  animation: demo 3s;
+  transform-origin: center top;
+}
+
+/* 75 */
+.graph-75 {
+  width: 200px;
+  height: 100px;
+  position: absolute;
+  overflow:hidden;
+
+}
+.graph-75:before, .graph-75:after {
+  width: 200px;
+  height: 100px;
+  position: absolute;
+  top: 100%;
+  border: 25px solid #BAFFB4;
+  content: '';
+  border-radius:0 0 300px 300px;
+  border-top: none;
+  animation: demo 3s;
+  transform-origin: center top;
+}
+
+/* 100 */
+.graph-100 {
+  width: 200px;
+  height: 100px;
+  position: absolute;
+  overflow:hidden;
+
+}
+.graph-100:before, .graph-100:after {
+  width: 200px;
+  height: 100px;
+  position: absolute;
+  top: 100%;
+  border: 25px solid #6BCB77;
+  content: '';
+  border-radius:0 0 300px 300px;
+  border-top: none;
+  animation: demo 3s;
+  transform-origin: center top;
+}
+
+@keyframes demo {
+  0% { transform: rotate(0deg) }
+  50% { transform: rotate(180deg) }
+}
+
+.robotPng{
+  width: 30%;
+
+}
+
+  .chat{
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+  .contacts_body{
+    padding:  0.75rem 0 !important;
+    overflow-y: auto;
+    white-space: nowrap;
+  }
+  .msg_card_body{
+    overflow-y: auto;
+  }
+ .card-footer{
+  border-radius: 0 0 15px 15px !important;
+    border-top: 0 !important;
+}
+  .container{
+    align-content: center;
+  }
+  .search{
+    border-radius: 15px 0 0 15px !important;
+    background-color: rgba(0,0,0,0.3) !important;
+    border:0 !important;
+    color:white !important;
+  }
+  .search:focus{
+       box-shadow:none !important;
+         outline:0px !important;
+  }
+  .type_msg{
+    background-color: rgba(0,0,0,0.3) !important;
+    border:0 !important;
+    color:white !important;
+    height: 60px !important;
+    overflow-y: auto;
+  }
+    .type_msg:focus{
+       box-shadow:none !important;
+         outline:0px !important;
+  }
+  .attach_btn{
+border-radius: 15px 0 0 15px !important;
+background-color: rgba(0,0,0,0.3) !important;
+    border:0 !important;
+    color: white !important;
+    cursor: pointer;
+  }
+  .send_btn{
+border-radius: 0 15px 15px 0 !important;
+background-color: rgba(0,0,0,0.3) !important;
+    border:0 !important;
+    color: white !important;
+    cursor: pointer;
+  }
+  .search_btn{
+    border-radius: 0 15px 15px 0 !important;
+    background-color: rgba(0,0,0,0.3) !important;
+    border:0 !important;
+    color: white !important;
+    cursor: pointer;
+  }
+  .user1{
+    height: 40px !important;
+    width: 40px !important;
+  }
+  .contacts{
+    list-style: none;
+    padding: 0;
+  }
+  .contacts li{
+    width: 100% !important;
+    padding: 5px 10px;
+    margin-bottom: 15px !important;
+  }
+.active{
+    background-color: rgba(0,0,0,0.3);
+}
+  .user_img{
+    height: 70px;
+    width: 70px;
+
+  }
+  .user_img_msg{
+    height: 40px;
+    width: 40px;
+
+  }
+.img_cont{
+    position: relative;
+    height: 70px;
+    width: 70px;
+}
+.img_cont_msg{
+    height: 40px;
+    width: 40px;
+}
+.online_icon{
+  position: absolute;
+  height: 15px;
+  width:15px;
+  background-color: #4cd137;
+  border-radius: 50%;
+  bottom: 0.2em;
+  right: 0.4em;
+  border:1.5px solid white;
+}
+.offline{
+  background-color: #c23616 !important;
+}
+.user_info{
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: 15px;
+}
+.user_info span{
+  font-size: 20px;
+  color: white;
+}
+.user_info p{
+font-size: 10px;
+color: rgba(255,255,255,0.6);
+}
+.video_cam{
+  margin-left: 50px;
+  margin-top: 5px;
+}
+.msg_cotainer{
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: 10px;
+  border-radius: 25px;
+  background-color: #344767;
+  padding: 10px;
+  position: relative;
+}
+.msg_cotainer_send{
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-right: 10px;
+  border-radius: 25px;
+  background-color: #344767;
+  padding: 10px;
+  position: relative;
+}
+.msg_time{
+  position: absolute;
+  left: 0;
+  bottom: -15px;
+  color: rgba(255,255,255,0.5);
+  font-size: 10px;
+}
+.msg_time_send{
+  position: absolute;
+  right:0;
+  bottom: -15px;
+  color: rgba(255,255,255,0.5);
+  font-size: 10px;
+}
+.msg_head{
+  position: relative;
+}
+#action_menu_btn{
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+}
+.action_menu{
+  z-index: 1;
+  position: absolute;
+  padding: 15px 0;
+  background-color: rgba(0,0,0,0.5);
+  color: white;
+  border-radius: 15px;
+  top: 30px;
+  right: 15px;
+  display: none;
+}
+.action_menu ul{
+  list-style: none;
+  padding: 0;
+margin: 0;
+}
+.action_menu ul li{
+  width: 100%;
+  padding: 10px 15px;
+  margin-bottom: 5px;
+}
+.action_menu ul li i{
+  padding-right: 10px;
+
+}
+.action_menu ul li:hover{
+  cursor: pointer;
+  background-color: rgba(0,0,0,0.2);
+}
+@media(max-width: 576px){
+.contacts_card{
+  margin-bottom: 15px !important;
+}
+}
+
+.input-group-text-message {
+    display: flex;
+    align-items: center;
+    padding: 1.4rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.4rem;
+    color: #344767;
+    text-align: center;
+    white-space: nowrap;
+    background-color: #fff;
+    border: 1px solid #d2d6da;
+    border-radius: 0.5rem;
+}
+
+@charset "utf-8"
+
+/* Variables
+   ============================================== */
+
+/* placeholder */
+$placeholder-color = inherit
+$placeholder-opacity = .7
+
+/* buttons */
+$buttons-border-radius = 50px
+$buttons-primary-background-color = #4776e6 //#8e54e9
+$buttons-primary-color = #fff
+
+
+/* Mixins
+   ============================================== */
+
+clear-fix()
+  &:before
+  &:after
+    display table
+    content ''
+  &:after
+    clear both
+
+
+/* Reset
+   ============================================== */
+
+*
+*:after
+*:before
+  box-sizing border-box
+  margin 0
+  padding 0
+
+
+/* Common
+   ============================================== */
+
+html
+  font-family "Open Sans"
+  min-height 100%
+  min-width 320px
+
+body
+  background-color #663faa
+  background -ms-linear-gradient(top left, #663faa 0%, #585fd5 100%)
+  background -webkit-linear-gradient(top left,#663faa,#585fd5)
+  background -o-linear-gradient(top left,#663faa,#585fd5)
+  background -moz-linear-gradient(top left,#663faa,#585fd5)
+  background linear-gradient(top left, #663faa, #585fd5)
+  background-repeat no-repeat
+  font-family 'Open Sans', Helvetica, Arial, sans-serif
+  font-size 14px
+  min-width 100%
+  min-height 100%
+  overflow scroll
+  padding 30px 0
+
+.container
+  display block
+  background #fff
+  width 320px
+  min-height 400px
+  border-radius 3px
+  margin 0 auto
+  padding 30px
+
+  h1
+    position relative
+    display inline-block
+    color #000
+    font-size 2em
+    font-weight 400
+    text-transform uppercase
+    text-align center
+    margin 0 0 20px
+    padding 0
+    &:after
+      display block
+      background #000
+      content ''
+      height 3px
+      width 50%
+      margin 20px auto 0
+      padding 0
+
+.form
+  display block
+
+  &__group
+    margin 10px 0 0
+
+    &--error
+      &.form__pincode
+        & > input
+          background-color #eb3b3b
+          &[disabled]
+            background-color #eb3b3b
+            color #fff
+            opacity 1
+
+    &--success
+      &.form__pincode
+        & > input
+          background-color #32c832
+          &[disabled]
+            background-color #32c832
+            color #fff
+            opacity 1
+
+  &__pincode
+    display block
+    width 100%
+    margin 10px auto 20px
+    padding 0
+    clear-fix()
+
+    & > label
+      display block
+      text-align center
+      margin 10px 0
+
+    & > input[type="number"]
+      -moz-appearance none
+      -webkit-appearance none
+      appearance none
+
+    & > input
+      display inline-block
+      float left
+      width 15%
+      height 50px
+      line-height 48px
+      text-align center
+      font-size 2em
+      color #181819
+      border 0
+      border-bottom 2px solid rgba(#000, .3)
+      border-radius 2px 2px 0 0
+      transition background-color .3s, color .3s, opacity .3s
+      cursor default
+      user-select none
+      margin 0
+      margin-top 10px
+      margin-right 2%
+      padding 0
+
+      &:focus
+        outline 0
+        box-shadow none
+        border-color #1486f0
+        animation border-pulsate 1.5s infinite
+        -webkit-tap-highlight-color transparent
+
+      &:last-child
+        margin-right 0
+
+      &[disabled]
+        background #eee
+        opacity 1
+
+  &__buttons
+    text-align center
+    margin 0 auto
+    padding 10px 0 0
+
+
+/* Button
+   ============================================== */
+
+.button
+  position relative
+  display inline-block
+  font-size 14px
+  font-weight 600
+  text-decoration none
+  outline 0
+  cursor pointer
+  height 50px
+  line-height 50px
+  margin 0
+  padding 0 20px
+
+  /* primary */
+  &--primary
+    background-color $buttons-primary-background-color
+    color $buttons-primary-color
+    line-height 48px
+    border 1px solid transparent
+    border-radius $buttons-border-radius
+    text-transform uppercase
+    white-space nowrap
+    transition all .2s ease-in-out
+    box-shadow 0 2px 4px rgba(#000, 0.2)
+    user-select none
+    -webkit-tap-highlight-color rgba(#000, .1)
+    -webkit-touch-callout none
+    button-outline(3px, $buttons-border-radius, rgba(#000, .3))
+
+    &:focus
+    &:hover
+      background-color darken($buttons-primary-background-color, 10%)
+      color $buttons-primary-color
+
+    &:active
+      background-color darken($buttons-primary-background-color, 20%)
+      color $buttons-primary-color
+      box-shadow inset 0 0 4px 2px rgba(#000, .1)
+
+    /* disabled */
+    &[disabled]
+      background-color $buttons-primary-background-color
+      user-select none
+      pointer-events none
+      cursor not-allowed
+      -moz-opacity .3
+      -khtml-opacity .3
+      opacity .3
+
+
+/* Placeholder
+   ============================================== */
+/* Chrome/Opera/Safari */
+::-webkit-input-placeholder
+  color $placeholder-color
+  opacity $placeholder-opacity
+
+/* Firefox 19+ */
+::-moz-placeholder
+  color $placeholder-color
+  opacity $placeholder-opacity
+
+/* IE 10+ */
+:-ms-input-placeholder
+  color $placeholder-color
+  opacity $placeholder-opacity
+
+/* Firefox 18- */
+:-moz-placeholder
+  color $placeholder-color
+  opacity $placeholder-opacity
+
+
+/* Animations
+   ============================================== */
+
+@keyframes border-pulsate
+  0%
+    border-color rgba(#1486f0, 1)
+  50%
+    border-color rgba(#000, .3)
+  100%
+    border-color rgba(#1486f0, 1)
