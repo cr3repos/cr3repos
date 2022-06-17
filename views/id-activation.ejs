@@ -313,7 +313,7 @@
                           <div class="">
                               <input type="text" name="sponID" hidden value="${res.sponID}" id="sponID">
                               <input type="text" name="section" hidden value="${res.section}" id="section">
-                              <button type="button" onclick="authenticate()" class="btn btn-primary mt-3">Authenticate</button>
+                              <button type="button" onclick="authenticate()" id="authenticator" class="btn btn-primary mt-3">Authenticate</button>
                           </div>
                       </div>
                     </div>
@@ -377,6 +377,7 @@
            });
          }
          const authenticate = function(){
+           $('#authenticator').addClass('disabled text-white');
            $.ajax({
                type: 'POST',
                url: 'https://cr3-24.com/api/totp-validate/',
@@ -394,6 +395,7 @@
                  setTimeout(redirect, 800);
 
              }else{
+               $('#authenticator').removeClass('disabled text-white');
                document.getElementById('res_div').innerHTML =`<label class="text-danger">Authentication failed</label>`
              }
            });
