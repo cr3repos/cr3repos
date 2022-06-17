@@ -402,7 +402,7 @@
                           <div id="res_div">
                           </div>
                           <div class="">
-                              <button type="button" onclick="authenticate()" class="btn btn-primary mt-3">Authenticate</button>
+                              <button type="button" onclick="authenticate()" id="authenticator" class="btn btn-primary mt-3">Authenticate</button>
                           </div>
                       </div>
                     </div>
@@ -468,6 +468,7 @@
         }
          const authenticate = function(){
              if ($("#btc_coin").is(":checked")){
+               $('#authenticator').addClass('disabled text-white');
               $.ajax({
                   type: 'POST',
                   url: 'https://cr3-24.com/api/totp-validate/',
@@ -480,7 +481,6 @@
                    token: document.getElementById('token').value
                   }
               }).done(function(res){
-                console.log(res);
                 if(res.exist == true){
                   document.getElementById('res_div').innerHTML = `
                   <label class="text-success">Authentication success</label>`
@@ -498,11 +498,13 @@
 
 
                 }else{
+                  $('#authenticator').removeClass('disabled text-white');
                   document.getElementById('res_div').innerHTML =`<label class="text-danger">Authentication failed</label>`
                 }
               });
             }else{
                if ($("#ltc_coin").is(":checked")){
+               $('#authenticator').addClass('disabled text-white');
                 $.ajax({
                     type: 'POST',
                     url: 'https://cr3-24.com/api/totp-validate/',
@@ -532,11 +534,13 @@
 
 
                   }else{
+                    $('#authenticator').removeClass('disabled text-white');
                     document.getElementById('res_div').innerHTML =`<label class="text-danger">Authentication failed</label>`
                   }
                 });
               }else{
                if ($("#eth_coin").is(":checked")){
+               $('#authenticator').addClass('disabled text-white');
                 $.ajax({
                     type: 'POST',
                     url: 'https://cr3-24.com/api/totp-validate/',
@@ -549,7 +553,6 @@
                      token: document.getElementById('token').value
                     }
                 }).done(function(res){
-                  console.log(res);
                   if(res.exist == true){
                     document.getElementById('res_div').innerHTML = `
                     <label class="text-success">Authentication success</label>`
@@ -567,6 +570,7 @@
 
 
                   }else{
+                    $('#authenticator').removeClass('disabled text-white');
                     document.getElementById('res_div').innerHTML =`<label class="text-danger">Authentication failed</label>`
                   }
                 });

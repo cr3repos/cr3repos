@@ -8803,7 +8803,6 @@ app.post('/api/totp-validate', (req, res, next) =>{
   let hour = d.getHours() ;
   let minutes = d.getMinutes();
   const updated = date + "/" + month + "/" + year;
-
   if(!req.session.user.email){
     res.redirect('/login');
   }else{
@@ -11240,6 +11239,15 @@ app.post('/api/totp-validate', (req, res, next) =>{
                     }
                   }
                 }
+              }else{
+                res.send({
+                    "valid": speakeasy.totp.verify({
+                        secret: foundUser.secret,
+                        encoding: "base32",
+                        token: req.body.token,
+                        window: 0
+                    })
+                });
               }
             }
           }
