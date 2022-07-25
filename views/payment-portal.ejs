@@ -389,7 +389,7 @@
          const createCharge = function() {
            $.ajax({
                type: 'GET',
-               url: 'http://localhost:3000/api/createPackage',
+               url: 'https://cr3.in/api/createPackage',
                dataType: "json"
            }).done(function(res){
                data =  res;
@@ -419,7 +419,7 @@
          const validate = function(){
            $.ajax({
                type: 'POST',
-               url: 'http://localhost:3000/api/validate_transaction',
+               url: 'https://cr3.in/api/validate_transaction',
                data: {
                  transaction_id: document.getElementById('transaction_id').value,
                  email: document.getElementById('userEmail').innerHTML
