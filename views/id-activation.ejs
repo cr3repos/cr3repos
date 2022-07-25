@@ -290,7 +290,7 @@
          const validate = function() {
            $.ajax({
                type: 'POST',
-               url: 'https://cr3-24.com/api/totp-secret/',
+               url: 'https://cr3.in/api/totp-secret/',
                data: {
                 section: document.getElementById('section').value,
                 sponID: document.getElementById('sponID').value
@@ -367,20 +367,20 @@
          const totp_secret = function(){
            $.ajax({
                type: 'POST',
-               url: 'https://cr3-24.com/api/totp-validate/',
+               url: 'https://cr3.in/api/totp-validate/',
                data: {
                 secret: document.getElementById('secret').innerHTML,
                 sponID: document.getElementById('sponID').value
                }
            }).done(function(res){
-             window.location.href='https://cr3-24.com/dashboard';
+             window.location.href='https://cr3.in/dashboard';
            });
          }
          const authenticate = function(){
            $('#authenticator').addClass('disabled text-white');
            $.ajax({
                type: 'POST',
-               url: 'https://cr3-24.com/api/totp-validate/',
+               url: 'https://cr3.in/api/totp-validate/',
                data: {
                 section: document.getElementById('section').value,
                 sponID: document.getElementById('sponID').value,
@@ -391,7 +391,7 @@
              if(res.valid == true){
                document.getElementById('res_div').innerHTML = `
                <label class="text-success">Authentication success</label>`
-               const redirect = window.location.href='https://cr3-24.com/dashboard';
+               const redirect = window.location.href='https://cr3.in/dashboard';
                  setTimeout(redirect, 800);
 
              }else{
