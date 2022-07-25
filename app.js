@@ -22,6 +22,11 @@ Client.init(coinbaseSecret);
 const { Charge } = resources;
 const speakeasy = require("speakeasy");
 const qrcode = require('qrcode');
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = require('twilio')(accountSid, authToken);
+
+
 
 
 const app = express();
@@ -116,6 +121,12 @@ const adminSchema = new mongoose.Schema({
     payment_id: String,
     from: String
   }],
+  id_activation: [{
+    transaction_id: Number,
+    sponsorID: String,
+    email: String,
+    status: String
+  }],
   report:[{
     date: String,
     amount: Number
@@ -166,6 +177,9 @@ const userSchema = new mongoose.Schema ({
   secret: String,
   transaction: [transactionSchema],
   message: [messageSchema],
+  activate_id: Number,
+  upgrade_id: Number,
+  pending: Boolean,
   notification:[{
     userID: String,
     sponID:String
@@ -489,7 +503,11 @@ app.get("/payment-portal", function(req, res){
       if(err){
         console.log(err);
       }else{
-        res.render("payment-portal", {user: foundUser,wallet:foundUser.wallet,status: foundUser.status });
+        if(foundUser.pending == true){
+          res.render("payment-portal", {user: foundUser,wallet:foundUser.wallet,status: foundUser.status, pending:'true' });
+        }else{
+          res.render("payment-portal", {user: foundUser,wallet:foundUser.wallet,status: foundUser.status });
+        }
       }
     });
   }
@@ -609,10 +627,18 @@ app.get("/naanthaDa", function(req, res){
           });
             Admin.findOne({email: process.env.EMAIL}, function(err, user){
               if(user.withdrawals.length == 0){
-                res.render("admin", {users: users.length, active: active.length, wbUsers: wbUsers.length, activePro: activePro.length });
+                if(user.id_activation.length == 0){
+                  res.render("admin", {users: users.length, active: active.length, wbUsers: wbUsers.length, activePro: activePro.length });
+                }else{
+
+                  res.render("admin", {users: users.length, active: active.length, wbUsers: wbUsers.length, activePro: activePro.length, id_activation: user.id_activation });
+                }
               }else{
-                const withdrawals = user.withdrawals;
-                res.render("admin", {withdrawals, users: users.length, active: active.length, wbUsers: wbUsers.length, activePro: activePro.length});
+                if(user.id_activation.length == 0){
+                  res.render("admin", {withdrawals:user.withdrawals, users: users.length, active: active.length, wbUsers: wbUsers.length, activePro: activePro.length});
+                }else{
+                  res.render("admin", {withdrawals:user.withdrawals, users: users.length, active: active.length, wbUsers: wbUsers.length, activePro: activePro.length, id_activation: user.id_activation});
+                }
               }
             });
         });
@@ -837,10 +863,10 @@ app.post("/register", function(req, res){
   let sponsorID = "CR3" + String(Math.floor(Math.random()*99999));
   let d = new Date();
   let year = d.getFullYear();
-  let month = d.getMonth() + 1;
-  let date = d.getDate();
-  let hour = d.getHours() ;
-  let minutes = d.getMinutes();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
   // Unique User Id
   User.findOne({sponID: sponsorID}, function(err, foundUser){
     if(err){
@@ -882,10 +908,10 @@ app.post("/register", function(req, res){
     } else {
       let d = new Date();
       let year = d.getFullYear();
-      let month = d.getMonth() + 1;
-      let date = d.getDate();
-      let hour = d.getHours() ;
-      let minutes = d.getMinutes();
+      let month = d.getUTCMonth() + 1;
+      let date = d.getUTCDate();
+      let hour = d.getUTCHours();
+      let minutes = d.getUTCMinutes();
       if(foundUser){
         if(foundUser.email === req.body.email){
           const alert = "User already exist! Please Sign In..."
@@ -969,10 +995,10 @@ app.post("/withdraw", function(req, res){
     User.findOne({email: req.session.user.email}, function(err, foundUser){
       let d = new Date();
       let year = d.getFullYear();
-      let month = d.getMonth() + 1;
-      let date = d.getDate();
-      let hour = d.getHours() ;
-      let minutes = d.getMinutes();
+      let month = d.getUTCMonth() + 1;
+      let date = d.getUTCDate();
+      let hour = d.getUTCHours();
+      let minutes = d.getUTCMinutes();
       const currentTime = hour + ":" + minutes;
       const currentDate =  date + "/" + month + "/" + year;
       const usrID = foundUser.userID;
@@ -1112,9 +1138,23 @@ app.post("/withdraw", function(req, res){
                           }
                         });
                       });
-                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                       fast2sms.sendMessage(options)
 
+                      client.messages
+                            .create({
+                               from: 'whatsapp:+14155238886',
+                               body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                               to: 'whatsapp:+91' + process.env.ADMIN1_NUMBER,
+                             })
+                            .then(message => console.log(message.sid));
+                      client.messages
+                            .create({
+                               from: 'whatsapp:+14155238886',
+                               body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                               to: 'whatsapp:+91' + process.env.ADMIN2_NUMBER,
+                             })
+                            .then(message => console.log(message.sid));
 
                       // create reusable transporter object using the default SMTP transport
                       const transporter = nodemailer.createTransport({
@@ -1300,8 +1340,20 @@ app.post("/withdraw", function(req, res){
                             }
                           });
                         });
-                        var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
-                        fast2sms.sendMessage(options)
+                        client.messages
+                              .create({
+                                 from: 'whatsapp:+14155238886',
+                                 body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                                 to: 'whatsapp:+91' + process.env.ADMIN1_NUMBER,
+                               })
+                              .then(message => console.log(message.sid));
+                        client.messages
+                              .create({
+                                 from: 'whatsapp:+14155238886',
+                                 body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                                 to: 'whatsapp:+91' + process.env.ADMIN2_NUMBER,
+                               })
+                              .then(message => console.log(message.sid));
 
                         const transporter = nodemailer.createTransport({
                           host: 'smtp.gmail.com',
@@ -1484,8 +1536,20 @@ app.post("/withdraw", function(req, res){
                           }
                         });
                       });
-                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
-                      fast2sms.sendMessage(options)
+                      client.messages
+                            .create({
+                               from: 'whatsapp:+14155238886',
+                               body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                               to: 'whatsapp:+91' + process.env.ADMIN1_NUMBER,
+                             })
+                            .then(message => console.log(message.sid));
+                      client.messages
+                            .create({
+                               from: 'whatsapp:+14155238886',
+                               body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                               to: 'whatsapp:+91' + process.env.ADMIN2_NUMBER,
+                             })
+                            .then(message => console.log(message.sid));
 
                       const transporter = nodemailer.createTransport({
                         host: 'smtp.gmail.com',
@@ -1639,8 +1703,20 @@ app.post("/withdraw", function(req, res){
                           }
                         });
                       });
-                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
-                      fast2sms.sendMessage(options)
+                      client.messages
+                            .create({
+                               from: 'whatsapp:+14155238886',
+                               body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                               to: 'whatsapp:+91' + process.env.ADMIN1_NUMBER,
+                             })
+                            .then(message => console.log(message.sid));
+                      client.messages
+                            .create({
+                               from: 'whatsapp:+14155238886',
+                               body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                               to: 'whatsapp:+91' + process.env.ADMIN2_NUMBER,
+                             })
+                            .then(message => console.log(message.sid));
 
                       const transporter = nodemailer.createTransport({
                         host: 'smtp.gmail.com',
@@ -1785,8 +1861,20 @@ app.post("/withdraw", function(req, res){
                           }
                         });
                       });
-                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
-                      fast2sms.sendMessage(options)
+                      client.messages
+                            .create({
+                               from: 'whatsapp:+14155238886',
+                               body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                               to: 'whatsapp:+91' + process.env.ADMIN1_NUMBER,
+                             })
+                            .then(message => console.log(message.sid));
+                      client.messages
+                            .create({
+                               from: 'whatsapp:+14155238886',
+                               body: 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + 'rs',
+                               to: 'whatsapp:+91' + process.env.ADMIN2_NUMBER,
+                             })
+                            .then(message => console.log(message.sid));
 
                       const transporter = nodemailer.createTransport({
                         host: 'smtp.gmail.com',
@@ -1861,10 +1949,10 @@ app.post("/credit", function(req, res){
     }else{
       let d = new Date();
       let year = d.getFullYear();
-      let month = d.getMonth() + 1;
-      let date = d.getDate();
-      let hour = d.getHours() ;
-      let minutes = d.getMinutes();
+      let month = d.getUTCMonth() + 1;
+      let date = d.getUTCDate();
+      let hour = d.getUTCHours();
+      let minutes = d.getUTCMinutes();
       const currentDate =  date + "/" + month + "/" + year;
       if(foundUser){
         const amount = Number(req.body.amount);
@@ -2114,10 +2202,10 @@ app.post("/users", function(req, res){
 app.post("/global-cred", function(req, res){
   let d = new Date();
   let year = d.getFullYear();
-  let month = d.getMonth() + 1;
-  let date = d.getDate();
-  let hour = d.getHours() ;
-  let minutes = d.getMinutes();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
   const updated = date + "/" + month + "/" + year;
   if(!req.session.admin){
     res.redirect("/itsOnlyForUAndMe");
@@ -3077,10 +3165,10 @@ app.post("/user-detail", function(req, res){
 app.post("/arc-team", function(req, res){
   let d = new Date();
   let year = d.getFullYear();
-  let month = d.getMonth() + 1;
-  let date = d.getDate();
-  let hour = d.getHours() ;
-  let minutes = d.getMinutes();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
   const updated = date + "/" + month + "/" + year;
 
   User.findOne({email: req.session.user.email}, function(err, foundUser){
@@ -3477,10 +3565,10 @@ app.post("/send", function(req, res){
   }else{
     let d = new Date();
     let year = d.getFullYear();
-    let month = d.getMonth() + 1;
-    let date = d.getDate();
-    let hour = d.getHours() ;
-    let minutes = d.getMinutes();
+    let month = d.getUTCMonth() + 1;
+    let date = d.getUTCDate();
+    let hour = d.getUTCHours();
+    let minutes = d.getUTCMinutes();
     const currentDate = date + "/" + month + "/" + year;
     User.findOne({email: req.session.user.email}, function(err, from){
       User.findOne({sponID: req.body.sponID}, function(error, to){
@@ -3630,10 +3718,10 @@ app.post("/send", function(req, res){
 app.post("/verify-payment", function(req, res){
   let d = new Date();
   let year = d.getFullYear();
-  let month = d.getMonth() + 1;
-  let date = d.getDate();
-  let hour = d.getHours() ;
-  let minutes = d.getMinutes();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
   const updated = date + "/" + month + "/" + year;
   const rawBody = req.rawBody;
   const signature = req.headers['x-cc-webhook-signature'];
@@ -5461,10 +5549,10 @@ app.post('/id-activation', function(req, res){
 app.post('/activation', function(req, res){
   let d = new Date();
   let year = d.getFullYear();
-  let month = d.getMonth() + 1;
-  let date = d.getDate();
-  let hour = d.getHours() ;
-  let minutes = d.getMinutes();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
   const updated = date + "/" + month + "/" + year;
 
   if(!req.session.user){
@@ -6312,10 +6400,10 @@ app.post('/activation', function(req, res){
 app.post('/upgradation', function(req, res){
   let d = new Date();
   let year = d.getFullYear();
-  let month = d.getMonth() + 1;
-  let date = d.getDate();
-  let hour = d.getHours() ;
-  let minutes = d.getMinutes();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
   const updated = date + "/" + month + "/" + year;
 
   if(!req.session.user){
@@ -6976,10 +7064,10 @@ app.post('/swap', function(req, res){
     User.findOne({email: req.session.user.email}, function(err, foundUser){
       let d = new Date();
       let year = d.getFullYear();
-      let month = d.getMonth() + 1;
-      let date = d.getDate();
-      let hour = d.getHours() ;
-      let minutes = d.getMinutes();
+      let month = d.getUTCMonth() + 1;
+      let date = d.getUTCDate();
+      let hour = d.getUTCHours();
+      let minutes = d.getUTCMinutes();
       const currentTime = hour + ":" + minutes;
       const currentDate =  date + "/" + month + "/" + year;
       const usrID = foundUser.userID;
@@ -7418,10 +7506,10 @@ app.post('/crypto-withdraw', function(req, res){
     User.findOne({email: req.session.user.email}, function(err, foundUser){
       let d = new Date();
       let year = d.getFullYear();
-      let month = d.getMonth() + 1;
-      let date = d.getDate();
-      let hour = d.getHours() ;
-      let minutes = d.getMinutes();
+      let month = d.getUTCMonth() + 1;
+      let date = d.getUTCDate();
+      let hour = d.getUTCHours();
+      let minutes = d.getUTCMinutes();
       const currentTime = hour + ":" + minutes;
       const currentDate =  date + "/" + month + "/" + year;
       const usrID = foundUser.userID;
@@ -7603,7 +7691,7 @@ app.post('/crypto-withdraw', function(req, res){
                         });
                         }
                       });
-                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                       fast2sms.sendMessage(options)
 
 
@@ -7833,7 +7921,7 @@ app.post('/crypto-withdraw', function(req, res){
                           });
                           }
                         });
-                        var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                        var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                         fast2sms.sendMessage(options)
 
                         const transporter = nodemailer.createTransport({
@@ -8059,7 +8147,7 @@ app.post('/crypto-withdraw', function(req, res){
                         });
                         }
                       });
-                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                       fast2sms.sendMessage(options)
 
                       const transporter = nodemailer.createTransport({
@@ -8256,7 +8344,7 @@ app.post('/crypto-withdraw', function(req, res){
                         });
                         }
                       });
-                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                       fast2sms.sendMessage(options)
 
                       const transporter = nodemailer.createTransport({
@@ -8444,7 +8532,7 @@ app.post('/crypto-withdraw', function(req, res){
                         });
                         }
                       });
-                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                      var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                       fast2sms.sendMessage(options)
 
                       const transporter = nodemailer.createTransport({
@@ -8491,10 +8579,10 @@ app.post('/crypto-withdraw', function(req, res){
 app.post("/api/totp-secret", (req, res, next) => {
   let d = new Date();
   let year = d.getFullYear();
-  let month = d.getMonth() + 1;
-  let date = d.getDate();
-  let hour = d.getHours() ;
-  let minutes = d.getMinutes();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
   const updated = date + "/" + month + "/" + year;
 
   if(!req.session.user.email){
@@ -8519,10 +8607,10 @@ app.post("/api/totp-secret", (req, res, next) => {
                 User.findOne({email: req.session.user.email}, function(err, foundUser){
                   let d = new Date();
                   let year = d.getFullYear();
-                  let month = d.getMonth() + 1;
-                  let date = d.getDate();
-                  let hour = d.getHours() ;
-                  let minutes = d.getMinutes();
+                  let month = d.getUTCMonth() + 1;
+                  let date = d.getUTCDate();
+                  let hour = d.getUTCHours();
+                  let minutes = d.getUTCMinutes();
                   const currentTime = hour + ":" + minutes;
                   const currentDate =  date + "/" + month + "/" + year;
                   const usrID = foundUser.userID;
@@ -8798,10 +8886,10 @@ app.post("/api/totp-secret", (req, res, next) => {
 app.post('/api/totp-validate', (req, res, next) =>{
   let d = new Date();
   let year = d.getFullYear();
-  let month = d.getMonth() + 1;
-  let date = d.getDate();
-  let hour = d.getHours() ;
-  let minutes = d.getMinutes();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
   const updated = date + "/" + month + "/" + year;
   if(!req.session.user.email){
     res.redirect('/login');
@@ -10306,10 +10394,10 @@ app.post('/api/totp-validate', (req, res, next) =>{
                         User.findOne({email: req.session.user.email}, function(err, foundUser){
                           let d = new Date();
                           let year = d.getFullYear();
-                          let month = d.getMonth() + 1;
-                          let date = d.getDate();
-                          let hour = d.getHours() ;
-                          let minutes = d.getMinutes();
+                          let month = d.getUTCMonth() + 1;
+                          let date = d.getUTCDate();
+                          let hour = d.getUTCHours();
+                          let minutes = d.getUTCMinutes();
                           const currentTime = hour + ":" + minutes;
                           const currentDate =  date + "/" + month + "/" + year;
                           const usrID = foundUser.userID;
@@ -10470,7 +10558,7 @@ app.post('/api/totp-validate', (req, res, next) =>{
                                               });
                                               }
                                             });
-                                            var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                                            var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                                             fast2sms.sendMessage(options)
 
 
@@ -10653,7 +10741,7 @@ app.post('/api/totp-validate', (req, res, next) =>{
                                               });
                                               }
                                             });
-                                            var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                                            var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                                             fast2sms.sendMessage(options)
 
                                             const transporter = nodemailer.createTransport({
@@ -10837,7 +10925,7 @@ app.post('/api/totp-validate', (req, res, next) =>{
                                           });
                                           }
                                         });
-                                        var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                                        var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                                         fast2sms.sendMessage(options)
 
                                         const transporter = nodemailer.createTransport({
@@ -11016,7 +11104,7 @@ app.post('/api/totp-validate', (req, res, next) =>{
                                             });
                                             }
                                           });
-                                          var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                                          var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                                           fast2sms.sendMessage(options)
 
                                           const transporter = nodemailer.createTransport({
@@ -11196,7 +11284,7 @@ app.post('/api/totp-validate', (req, res, next) =>{
                                           });
                                           }
                                         });
-                                        var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','9626930260']}
+                                        var options = {authorization : process.env.YOUR_API_KEY , message : 'NEW WITHDRAWAL REQUEST, Withdrawal from ' + req.session.user.email + ' and the amount is ' + req.body.amount + '$ which is ' + req.body.amount*80 + "rs",  numbers : ['7676748605','' + process.env.ADMIN2_NUMBER]}
                                         fast2sms.sendMessage(options)
 
                                         const transporter = nodemailer.createTransport({
@@ -11253,6 +11341,1540 @@ app.post('/api/totp-validate', (req, res, next) =>{
           }
         }
       });
+  }
+});
+
+app.post('/api/validate_transaction', (req, res, next) =>{
+  let d = new Date();
+  let year = d.getFullYear();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
+  const updated = date + "/" + month + "/" + year;
+  if(!req.session.user.email){
+    res.redirect('/login');
+  }else{
+    User.findOne({email: req.body.email}, function(err, foundUser){
+      if(err){
+        console.log(err);
+      }else{
+        if(foundUser){
+          if(foundUser.status == 'Inactive'){
+            User.findOne({activate_id: req.body.transaction_id}, function(error, foundPayment){
+              if(!foundPayment){
+               res.send({validation: 'success'});
+                Admin.findOne({email: process.env.EMAIL}, function(err, foundAdmin){
+
+                  const transaction = foundAdmin.id_activation
+                  const newTransaction = {
+                    email: foundUser.email,
+                    sponsorID: foundUser.sponID,
+                    transaction_id: req.body.transaction_id,
+                    status: 'Activate'
+                  }
+                  transaction.push(newTransaction);
+
+                  Admin.updateOne({email: process.env.EMAIL}, {$set:{id_activation:transaction}}, function(err){
+                    if(err){
+                      console.log(err)
+                    }
+                  });
+                  User.updateOne({email: req.body.email}, {$set:{pending:true}}, function(err){
+                    if(err){
+                      console.log(err)
+                    }
+                  });
+                  client.messages
+                        .create({
+                           from: 'whatsapp:+14155238886',
+                           body: 'New ID activation request from ' + foundUser.email + ', please validate the payment id and process the activation process',
+                           to: 'whatsapp:+91' + process.env.ADMIN2_NUMBER,
+                         })
+                        .then(message => console.log(message.sid));
+                  client.messages
+                        .create({
+                           from: 'whatsapp:+14155238886',
+                           body: 'New ID activation request from ' + foundUser.email + ', please validate the payment id and process the activation process',
+                           to: 'whatsapp:+91' + process.env.ADMIN1_NUMBER,
+                         })
+                        .then(message => console.log(message.sid));
+
+                });
+              }else{
+                res.send({validation: 'failed'})
+              }
+            });
+          }
+          if(foundUser.status == 'Active'){
+            User.findOne({upgrade_id: req.body.transaction_id}, function(error, foundPayment){
+              if(!foundPayment){
+               res.send({validation: 'success'});
+                Admin.findOne({email: process.env.EMAIL}, function(err, foundAdmin){
+
+                  const transaction = foundAdmin.id_activation
+                  const newTransaction = {
+                    email: foundUser.email,
+                    sponsorID: foundUser.sponID,
+                    transaction_id: req.body.transaction_id,
+                    status: 'Upgrade'
+                  }
+                  transaction.push(newTransaction);
+
+                  Admin.updateOne({email: process.env.EMAIL}, {$set:{id_activation:transaction}}, function(err){
+                    if(err){
+                      console.log(err)
+                    }
+                  });
+                  User.updateOne({email: req.body.email}, {$set:{pending:true}}, function(err){
+                    if(err){
+                      console.log(err)
+                    }
+                  });
+                  client.messages
+                        .create({
+                           from: 'whatsapp:+14155238886',
+                           body: 'New ID activation request from ' + foundUser.email + ', please validate the payment id and process the activation process',
+                           to: 'whatsapp:+91' + process.env.ADMIN2_NUMBER,
+                         })
+                        .then(message => console.log(message.sid));
+                  client.messages
+                        .create({
+                           from: 'whatsapp:+14155238886',
+                           body: 'New ID activation request from ' + foundUser.email + ', please validate the payment id and process the activation process',
+                           to: 'whatsapp:+91' + process.env.ADMIN1_NUMBER,
+                         })
+                        .then(message => console.log(message.sid));
+
+                });
+              }else{
+                res.send({validation: 'failed'})
+              }
+            });
+          }
+        }
+      }
+    });
+  }
+});
+
+app.post('/api/id_activation', (req, res, next) =>{
+  let d = new Date();
+  let year = d.getFullYear();
+  let month = d.getUTCMonth() + 1;
+  let date = d.getUTCDate();
+  let hour = d.getUTCHours();
+  let minutes = d.getUTCMinutes();
+  const updated = date + "/" + month + "/" + year;
+  if(!req.session.admin){
+    res.redirect("/itsOnlyForUAndMe");
+  }else{
+    if(req.body.activate == 'success'){
+      if(req.body.status == 'Activate'){
+
+          User.findOne({email: req.body.email}, function(error, sponsorUser){
+            if(error){
+              console.log(error);
+            }else{
+             if(sponsorUser){
+               const email = sponsorUser.email;
+               const id = req.body.transaction_id;
+                 if(sponsorUser.status == 'Inactive'){
+                   //process it
+                   //For Basic Plan
+                   User.updateOne({email: email},{$set:{status: "Active"}}, function(err){
+                     if(err){
+                       console.log(err);
+                     }else{
+                       User.updateOne({email:email}, {$set:{pending: false}}, function(error){
+                         if(error){
+                           console.log(error);
+                         }
+                       });
+                       User.updateOne({email:email}, {$set:{activate_id: id}}, function(error){
+                         if(error){
+                           console.log(error);
+                         }
+                       });
+                       Admin.updateOne({email:process.env.EMAIL}, {$pull:{id_activation:{transaction_id:req.body.transaction_id}}}, function(err){
+                         if(err){
+                           console.log(err)
+                         }
+                       });
+                     }
+                   });
+                   User.updateOne({email: email},{$set:{time: updated }}, function(err){
+                     if(err){
+                       console.log(err);
+                     }
+                   });
+
+                   // Referral points
+                   User.findOne({sponID: sponsorUser.sponsorID}, function(err, sponUser){
+                     if(err){
+                       console.log(err);
+                     }else{
+                       if(sponUser){
+                         if(sponUser.status == "Active"){
+                           User.updateOne({sponID: sponsorUser.sponsorID},
+                             {$set:{earnings:{
+                               ab:{
+                                 ri: sponUser.earnings.ab.ri + 10,
+                                 wb: sponUser.earnings.ab.wb,
+                                 nw: sponUser.earnings.ab.nw
+                               },
+                               te: sponUser.earnings.te + 10,
+                               ri: sponUser.earnings.ri + 10,
+                               wb: sponUser.earnings.wb,
+                               nw: sponUser.earnings.nw
+                             }}},  function(err){
+                             if(err){
+                               console.log(err);
+                             }
+                           });
+                           if(sponUser.transaction){
+                             const transaction = sponUser.transaction;
+                             const newTran = {
+                               type: 'referral',
+                               mode: 'credit',
+                               amount: '10',
+                               date: updated
+                             };
+                             transaction.push(newTran);
+                             User.updateOne({email: sponUser.email}, {$set:{transaction:transaction}}, function(err){
+                               if(err){
+                                 console.log(err);
+                               }
+                             });
+                           }else{
+                             const newTran = {
+                               type: 'referral',
+                               mode: 'credit',
+                               amount: '10',
+                               date: updated
+                             };
+                             User.updateOne({email: sponUser.email}, {$set:{transaction:newTran}}, function(err){
+                               if(err){
+                                 console.log(err);
+                               }
+                             });
+                           }
+
+                       }else{
+                         if(sponUser.status == "Active+"){
+                         User.updateOne({sponID: sponsorUser.sponsorID},
+                           {$set:{earnings:{
+                             ab:{
+                               ri: sponUser.earnings.ab.ri + 10,
+                               wb: sponUser.earnings.ab.wb,
+                               nw: sponUser.earnings.ab.nw,
+                               ot: sponUser.earnings.ab.ot,
+                               oa: sponUser.earnings.ab.oa
+                             },
+                             te: sponUser.earnings.te + 10,
+                             ri: sponUser.earnings.ri + 10,
+                             wb: sponUser.earnings.wb,
+                             nw: sponUser.earnings.nw,
+                             ot: sponUser.earnings.ot,
+                             oa: sponUser.earnings.oa
+                           }}},  function(err){
+                           if(err){
+                             console.log(err);
+                           }
+                         });
+                         if(sponUser.transaction){
+                           const transaction = sponUser.transaction;
+                           const newTran = {
+                             type: 'referral',
+                             mode: 'credit',
+                             amount: '10',
+                             date: updated
+                           };
+                           transaction.push(newTran);
+                           User.updateOne({email: sponUser.email}, {$set:{transaction:transaction}}, function(err){
+                             if(err){
+                               console.log(err);
+                             }
+                           });
+                         }else{
+                           const newTran = {
+                             type: 'referral',
+                             mode: 'credit',
+                             amount: '10',
+                             date: updated
+                           };
+                           User.updateOne({email: sponUser.email}, {$set:{transaction:newTran}}, function(err){
+                             if(err){
+                               console.log(err);
+                             }
+                           });
+                         }
+                       }
+                       }
+                    // level points
+                      User.findOne({sponID: sponUser.sponsorID}, function(err, firstUser){
+                      if(err){
+                        console.log(err);
+                      } else {
+                        if(firstUser){
+                          if(firstUser.status === "Active+"){
+                            User.updateOne({sponID: sponUser.sponsorID},
+                              {$set:{earnings:{
+                                ab:{
+                                  ri: firstUser.earnings.ab.ri,
+                                  wb: firstUser.earnings.ab.wb + 0.5,
+                                  nw: firstUser.earnings.ab.nw,
+                                  ot: firstUser.earnings.ab.ot,
+                                  oa: firstUser.earnings.ab.oa
+                                },
+                                te: firstUser.earnings.te + 0.5,
+                                ri: firstUser.earnings.ri,
+                                wb: firstUser.earnings.wb + 0.5,
+                                nw: firstUser.earnings.nw,
+                                ot: firstUser.earnings.ot,
+                                oa: firstUser.earnings.oa
+                              }}},  function(err){
+                              if(err){
+                                console.log(err);
+                              }
+                            });
+
+                            if(firstUser.transaction){
+                              const transaction = firstUser.transaction;
+                              const newTran = {
+                                type: 'level-1',
+                                mode: 'credit',
+                                amount: '0.5',
+                                date: updated
+                              };
+                              transaction.push(newTran);
+                              User.updateOne({email: firstUser.email}, {$set:{transaction:transaction}}, function(err){
+                                if(err){
+                                  console.log(err);
+                                }
+                              });
+                            }else{
+                              const newTran = {
+                                type: 'level-1',
+                                mode: 'credit',
+                                amount: '0.5',
+                                date: updated
+                              };
+                              User.updateOne({email: firstUser.email}, {$set:{transaction:newTran}}, function(err){
+                                if(err){
+                                  console.log(err);
+                                }
+                              });
+                            }
+
+                          }
+
+
+                            if(firstUser.status === "Active"){
+                              User.updateOne({sponID: sponUser.sponsorID},
+                                {$set:{earnings:{
+                                  ab:{
+                                    ri: firstUser.earnings.ab.ri,
+                                    wb: firstUser.earnings.ab.wb + 0.5,
+                                    nw: firstUser.earnings.ab.nw
+                                  },
+                                  te: firstUser.earnings.te + 0.5,
+                                  ri: firstUser.earnings.ri,
+                                  wb: firstUser.earnings.wb + 0.5,
+                                  nw: firstUser.earnings.nw
+                                }}},  function(err){
+                                if(err){
+                                  console.log(err);
+                                }
+                              });
+
+                              if(firstUser.transaction){
+                                const transaction = firstUser.transaction;
+                                const newTran = {
+                                  type: 'level-1',
+                                  mode: 'credit',
+                                  amount: '0.5',
+                                  date: updated
+                                };
+                                transaction.push(newTran);
+                                User.updateOne({email: firstUser.email}, {$set:{transaction:transaction}}, function(err){
+                                  if(err){
+                                    console.log(err);
+                                  }
+                                });
+                              }else{
+                                const newTran = {
+                                  type: 'level-1',
+                                  mode: 'credit',
+                                  amount: '0.5',
+                                  date: updated
+                                };
+                                User.updateOne({email: firstUser.email}, {$set:{transaction:newTran}}, function(err){
+                                  if(err){
+                                    console.log(err);
+                                  }
+                                });
+                              }
+
+                            }
+
+                            User.findOne({sponID: firstUser.sponsorID}, function(err, secondUser){
+                              if(err){
+                                console.log(err);
+                              }else{
+                                if(secondUser){
+                                  if(secondUser.status === "Active+"){
+                                    User.updateOne({sponID: firstUser.sponsorID},
+                                      {$set:{earnings:{
+                                        ab:{
+                                          ri: secondUser.earnings.ab.ri,
+                                          wb: secondUser.earnings.ab.wb + 0.5,
+                                          nw: secondUser.earnings.ab.nw,
+                                          ot: secondUser.earnings.ab.ot,
+                                          oa: secondUser.earnings.ab.oa
+                                        },
+                                        te: secondUser.earnings.te + 0.5,
+                                        ri: secondUser.earnings.ri,
+                                        wb: secondUser.earnings.wb + 0.5,
+                                        nw: secondUser.earnings.nw,
+                                        ot: secondUser.earnings.ot,
+                                        oa: secondUser.earnings.oa
+                                      }}},  function(err){
+                                      if(err){
+                                        console.log(err);
+                                      }
+                                    });
+
+                                    if(secondUser.transaction){
+                                      const transaction = secondUser.transaction;
+                                      const newTran = {
+                                        type: 'level-2',
+                                        mode: 'credit',
+                                        amount: '0.5',
+                                        date: updated
+                                      };
+                                      transaction.push(newTran);
+                                      User.updateOne({email: secondUser.email}, {$set:{transaction:transaction}}, function(err){
+                                        if(err){
+                                          console.log(err);
+                                        }
+                                      });
+                                    }else{
+                                      const newTran = {
+                                        type: 'level-2',
+                                        mode: 'credit',
+                                        amount: '0.5',
+                                        date: updated
+                                      };
+                                      User.updateOne({email: secondUser.email}, {$set:{transaction:newTran}}, function(err){
+                                        if(err){
+                                          console.log(err);
+                                        }
+                                      });
+                                    }
+                                  }
+
+                                  if(secondUser.status === "Active"){
+                                      User.updateOne({sponID: firstUser.sponsorID},
+                                        {$set:{earnings:{
+                                          ab:{
+                                            ri: secondUser.earnings.ab.ri,
+                                            wb: secondUser.earnings.ab.wb + 0.5,
+                                            nw: secondUser.earnings.ab.nw
+                                          },
+                                          te: secondUser.earnings.te + 0.5,
+                                          ri: secondUser.earnings.ri,
+                                          wb: secondUser.earnings.wb + 0.5,
+                                          nw: secondUser.earnings.nw
+                                        }}},  function(err){
+                                        if(err){
+                                          console.log(err);
+                                        }
+                                      });
+
+                                      if(secondUser.transaction){
+                                        const transaction = secondUser.transaction;
+                                        const newTran = {
+                                          type: 'level-2',
+                                          mode: 'credit',
+                                          amount: '0.5',
+                                          date: updated
+                                        };
+                                        transaction.push(newTran);
+                                        User.updateOne({email: secondUser.email}, {$set:{transaction:transaction}}, function(err){
+                                          if(err){
+                                            console.log(err);
+                                          }
+                                        });
+                                      }else{
+                                        const newTran = {
+                                          type: 'level-2',
+                                          mode: 'credit',
+                                          amount: '0.5',
+                                          date: updated
+                                        };
+                                        User.updateOne({email: secondUser.email}, {$set:{transaction:newTran}}, function(err){
+                                          if(err){
+                                            console.log(err);
+                                          }
+                                        });
+                                      }
+                                    }
+
+                                    //Third User
+                                    User.findOne({sponID:secondUser.sponsorID}, function(err, thirdUser){
+                                      if(err){
+                                        console.log(err);
+                                      }else{
+                                        if(thirdUser){
+                                          if(thirdUser.status === "Active+"){
+                                            User.updateOne({sponID: secondUser.sponsorID},
+                                              {$set:{earnings:{
+                                                ab:{
+                                                  ri: thirdUser.earnings.ab.ri,
+                                                  wb: thirdUser.earnings.ab.wb + 0.5,
+                                                  nw: thirdUser.earnings.ab.nw,
+                                                  ot: thirdUser.earnings.ab.ot,
+                                                  oa: thirdUser.earnings.ab.oa
+                                                },
+                                                te: thirdUser.earnings.te + 0.5,
+                                                ri: thirdUser.earnings.ri,
+                                                wb: thirdUser.earnings.wb + 0.5,
+                                                nw: thirdUser.earnings.nw,
+                                                ot: thirdUser.earnings.ot,
+                                                oa: thirdUser.earnings.oa
+                                              }}},  function(err){
+                                              if(err){
+                                                console.log(err);
+                                              }
+                                            });
+
+
+                                            if(thirdUser.transaction){
+                                              const transaction = thirdUser.transaction;
+                                              const newTran = {
+                                                type: 'level-3',
+                                                mode: 'credit',
+                                                amount: '0.5',
+                                                date: updated
+                                              };
+                                              transaction.push(newTran);
+                                              User.updateOne({email: thirdUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                if(err){
+                                                  console.log(err);
+                                                }
+                                              });
+                                            }else{
+                                              const newTran = {
+                                                type: 'level-3',
+                                                mode: 'credit',
+                                                amount: '0.5',
+                                                date: updated
+                                              };
+                                              User.updateOne({email: thirdUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                if(err){
+                                                  console.log(err);
+                                                }
+                                              });
+                                            }
+                                          }
+
+                                          if(thirdUser.status === "Active"){
+                                              User.updateOne({sponID: secondUser.sponsorID},
+                                                {$set:{earnings:{
+                                                  ab:{
+                                                    ri: thirdUser.earnings.ab.ri,
+                                                    wb: thirdUser.earnings.ab.wb + 0.5,
+                                                    nw: thirdUser.earnings.ab.nw
+                                                  },
+                                                  te: thirdUser.earnings.te + 0.5,
+                                                  ri: thirdUser.earnings.ri,
+                                                  wb: thirdUser.earnings.wb + 0.5,
+                                                  nw: thirdUser.earnings.nw
+                                                }}},  function(err){
+                                                if(err){
+                                                  console.log(err);
+                                                }
+                                              });
+
+
+                                              if(thirdUser.transaction){
+                                                const transaction = thirdUser.transaction;
+                                                const newTran = {
+                                                  type: 'level-3',
+                                                  mode: 'credit',
+                                                  amount: '0.5',
+                                                  date: updated
+                                                };
+                                                transaction.push(newTran);
+                                                User.updateOne({email: thirdUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                  if(err){
+                                                    console.log(err);
+                                                  }
+                                                });
+                                              }else{
+                                                const newTran = {
+                                                  type: 'level-3',
+                                                  mode: 'credit',
+                                                  amount: '0.5',
+                                                  date: updated
+                                                };
+                                                User.updateOne({email: thirdUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                  if(err){
+                                                    console.log(err);
+                                                  }
+                                                });
+                                              }
+                                            }
+
+                                            //Forth User
+                                            User.findOne({sponID:thirdUser.sponsorID}, function(err, fourthUser){
+                                              if(err){
+                                                console.log(err);
+                                              }else{
+                                                if(fourthUser){
+                                                  if(fourthUser.status === "Active+"){
+                                                    User.updateOne({sponID: thirdUser.sponsorID},
+                                                      {$set:{earnings:{
+                                                        ab:{
+                                                          ri: fourthUser.earnings.ab.ri,
+                                                          wb: fourthUser.earnings.ab.wb + 0.5,
+                                                          nw: fourthUser.earnings.ab.nw,
+                                                          ot: fourthUser.earnings.ab.ot,
+                                                          oa: fourthUser.earnings.ab.oa
+                                                        },
+                                                        te: fourthUser.earnings.te + 0.5,
+                                                        ri: fourthUser.earnings.ri,
+                                                        wb: fourthUser.earnings.wb + 0.5,
+                                                        nw: fourthUser.earnings.nw,
+                                                        ot: fourthUser.earnings.ot,
+                                                        oa: fourthUser.earnings.oa
+                                                      }}},  function(err){
+                                                      if(err){
+                                                        console.log(err);
+                                                      }
+                                                    });
+
+
+                                                    if(fourthUser.transaction){
+                                                      const transaction = fourthUser.transaction;
+                                                      const newTran = {
+                                                        type: 'level-4',
+                                                        mode: 'credit',
+                                                        amount: '0.5',
+                                                        date: updated
+                                                      };
+                                                      transaction.push(newTran);
+                                                      User.updateOne({email: fourthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                        if(err){
+                                                          console.log(err);
+                                                        }
+                                                      });
+                                                    }else{
+                                                      const newTran = {
+                                                        type: 'level-4',
+                                                        mode: 'credit',
+                                                        amount: '0.5',
+                                                        date: updated
+                                                      };
+                                                      User.updateOne({email: fourthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                        if(err){
+                                                          console.log(err);
+                                                        }
+                                                      });
+                                                    }
+                                                  }
+
+
+                                                  if(fourthUser.status === "Active"){
+                                                      User.updateOne({sponID: thirdUser.sponsorID},
+                                                        {$set:{earnings:{
+                                                          ab:{
+                                                            ri: fourthUser.earnings.ab.ri,
+                                                            wb: fourthUser.earnings.ab.wb + 0.5,
+                                                            nw: fourthUser.earnings.ab.nw
+                                                          },
+                                                          te: fourthUser.earnings.te + 0.5,
+                                                          ri: fourthUser.earnings.ri,
+                                                          wb: fourthUser.earnings.wb + 0.5,
+                                                          nw: fourthUser.earnings.nw
+                                                        }}},  function(err){
+                                                        if(err){
+                                                          console.log(err);
+                                                        }
+                                                      });
+
+
+                                                      if(fourthUser.transaction){
+                                                        const transaction = fourthUser.transaction;
+                                                        const newTran = {
+                                                          type: 'level-4',
+                                                          mode: 'credit',
+                                                          amount: '0.5',
+                                                          date: updated
+                                                        };
+                                                        transaction.push(newTran);
+                                                        User.updateOne({email: fourthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                          if(err){
+                                                            console.log(err);
+                                                          }
+                                                        });
+                                                      }else{
+                                                        const newTran = {
+                                                          type: 'level-4',
+                                                          mode: 'credit',
+                                                          amount: '0.5',
+                                                          date: updated
+                                                        };
+                                                        User.updateOne({email: fourthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                          if(err){
+                                                            console.log(err);
+                                                          }
+                                                        });
+                                                      }
+                                                    }
+
+                                                    //fifth User
+                                                    User.findOne({sponID:fourthUser.sponsorID}, function(err, fifthUser){
+                                                      if(err){
+                                                        console.log(err);
+                                                      }else{
+                                                        if(fifthUser){
+                                                          if(fifthUser.status === "Active+"){
+                                                            User.updateOne({sponID: fourthUser.sponsorID},
+                                                              {$set:{earnings:{
+                                                                ab:{
+                                                                  ri: fifthUser.earnings.ab.ri,
+                                                                  wb: fifthUser.earnings.ab.wb + 0.5,
+                                                                  nw: fifthUser.earnings.ab.nw,
+                                                                  ot: fifthUser.earnings.ab.ot,
+                                                                  oa: fifthUser.earnings.ab.oa
+                                                                },
+                                                                te: fifthUser.earnings.te + 0.5,
+                                                                ri: fifthUser.earnings.ri,
+                                                                wb: fifthUser.earnings.wb + 0.5,
+                                                                nw: fifthUser.earnings.nw,
+                                                                ot: fifthUser.earnings.ot,
+                                                                oa: fifthUser.earnings.oa
+                                                              }}},  function(err){
+                                                              if(err){
+                                                                console.log(err);
+                                                              }
+                                                            });
+
+
+                                                            if(fifthUser.transaction){
+                                                              const transaction = fifthUser.transaction;
+                                                              const newTran = {
+                                                                type: 'level-5',
+                                                                mode: 'credit',
+                                                                amount: '0.5',
+                                                                date: updated
+                                                              };
+                                                              transaction.push(newTran);
+                                                              User.updateOne({email: fifthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                                if(err){
+                                                                  console.log(err);
+                                                                }
+                                                              });
+                                                            }else{
+                                                              const newTran = {
+                                                                type: 'level-5',
+                                                                mode: 'credit',
+                                                                amount: '0.5',
+                                                                date: updated
+                                                              };
+                                                              User.updateOne({email: fifthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                                if(err){
+                                                                  console.log(err);
+                                                                }
+                                                              });
+                                                            }
+                                                          }
+
+
+                                                          if(fifthUser.status === "Active"){
+                                                              User.updateOne({sponID: fourthUser.sponsorID},
+                                                                {$set:{earnings:{
+                                                                  ab:{
+                                                                    ri: fifthUser.earnings.ab.ri,
+                                                                    wb: fifthUser.earnings.ab.wb + 0.5,
+                                                                    nw: fifthUser.earnings.ab.nw
+                                                                  },
+                                                                  te: fifthUser.earnings.te + 0.5,
+                                                                  ri: fifthUser.earnings.ri,
+                                                                  wb: fifthUser.earnings.wb + 0.5,
+                                                                  nw: fifthUser.earnings.nw
+                                                                }}},  function(err){
+                                                                if(err){
+                                                                  console.log(err);
+                                                                }
+                                                              });
+
+
+                                                              if(fifthUser.transaction){
+                                                                const transaction = fifthUser.transaction;
+                                                                const newTran = {
+                                                                  type: 'level-5',
+                                                                  mode: 'credit',
+                                                                  amount: '0.5',
+                                                                  date: updated
+                                                                };
+                                                                transaction.push(newTran);
+                                                                User.updateOne({email: fifthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                                  if(err){
+                                                                    console.log(err);
+                                                                  }
+                                                                });
+                                                              }else{
+                                                                const newTran = {
+                                                                  type: 'level-5',
+                                                                  mode: 'credit',
+                                                                  amount: '0.5',
+                                                                  date: updated
+                                                                };
+                                                                User.updateOne({email: fifthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                                  if(err){
+                                                                    console.log(err);
+                                                                  }
+                                                                });
+                                                              }
+                                                            }
+
+                                                            //sixth User
+                                                            User.findOne({sponID:fifthUser.sponsorID}, function(err, sixthUser){
+                                                              if(err){
+                                                                console.log(err);
+                                                              }else{
+                                                                if(sixthUser){
+                                                                  if(sixthUser.status === "Active+"){
+                                                                    User.updateOne({sponID: fifthUser.sponsorID},
+                                                                      {$set:{earnings:{
+                                                                        ab:{
+                                                                          ri: sixthUser.earnings.ab.ri,
+                                                                          wb: sixthUser.earnings.ab.wb + 0.5,
+                                                                          nw: sixthUser.earnings.ab.nw,
+                                                                          ot: sixthUser.earnings.ab.ot,
+                                                                          oa: sixthUser.earnings.ab.oa
+                                                                        },
+                                                                        te: sixthUser.earnings.te + 0.5,
+                                                                        ri: sixthUser.earnings.ri,
+                                                                        wb: sixthUser.earnings.wb + 0.5,
+                                                                        nw: sixthUser.earnings.nw,
+                                                                        ot: sixthUser.earnings.ot,
+                                                                        oa: sixthUser.earnings.oa
+                                                                      }}},  function(err){
+                                                                      if(err){
+                                                                        console.log(err);
+                                                                      }
+                                                                    });
+
+
+                                                                    if(sixthUser.transaction){
+                                                                      const transaction = sixthUser.transaction;
+                                                                      const newTran = {
+                                                                        type: 'level-6',
+                                                                        mode: 'credit',
+                                                                        amount: '0.5',
+                                                                        date: updated
+                                                                      };
+                                                                      transaction.push(newTran);
+                                                                      User.updateOne({email: sixthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                                        if(err){
+                                                                          console.log(err);
+                                                                        }
+                                                                      });
+                                                                    }else{
+                                                                      const newTran = {
+                                                                        type: 'level-6',
+                                                                        mode: 'credit',
+                                                                        amount: '0.5',
+                                                                        date: updated
+                                                                      };
+                                                                      User.updateOne({email: sixthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                                        if(err){
+                                                                          console.log(err);
+                                                                        }
+                                                                      });
+                                                                    }
+                                                                  }
+
+
+                                                                  if(sixthUser.status === "Active"){
+                                                                      User.updateOne({sponID: fifthUser.sponsorID},
+                                                                        {$set:{earnings:{
+                                                                          ab:{
+                                                                            ri: sixthUser.earnings.ab.ri,
+                                                                            wb: sixthUser.earnings.ab.wb + 0.5,
+                                                                            nw: sixthUser.earnings.ab.nw
+                                                                          },
+                                                                          te: sixthUser.earnings.te + 0.5,
+                                                                          ri: sixthUser.earnings.ri,
+                                                                          wb: sixthUser.earnings.wb + 0.5,
+                                                                          nw: sixthUser.earnings.nw
+                                                                        }}},  function(err){
+                                                                        if(err){
+                                                                          console.log(err);
+                                                                        }
+                                                                      });
+
+
+                                                                      if(sixthUser.transaction){
+                                                                        const transaction = sixthUser.transaction;
+                                                                        const newTran = {
+                                                                          type: 'level-6',
+                                                                          mode: 'credit',
+                                                                          amount: '0.5',
+                                                                          date: updated
+                                                                        };
+                                                                        transaction.push(newTran);
+                                                                        User.updateOne({email: sixthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                                          if(err){
+                                                                            console.log(err);
+                                                                          }
+                                                                        });
+                                                                      }else{
+                                                                        const newTran = {
+                                                                          type: 'level-6',
+                                                                          mode: 'credit',
+                                                                          amount: '0.5',
+                                                                          date: updated
+                                                                        };
+                                                                        User.updateOne({email: sixthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                                          if(err){
+                                                                            console.log(err);
+                                                                          }
+                                                                        });
+                                                                      }
+                                                                    }
+                                                                }
+                                                              }
+                                                            });
+                                                        }
+                                                      }
+                                                    });
+                                                }
+                                              }
+                                            });
+                                        }
+                                      }
+                                    });
+                                }
+                              }
+                            });
+                        }
+                      }
+                    });
+                       }
+                     }
+                   });
+                 }
+             }
+            }
+          })
+      }
+      if(req.body.status == 'Upgrade'){
+
+          User.findOne({email: req.body.email}, function(error, sponsorUser){
+            if(error){
+              console.log(error);
+            }else{
+             if(sponsorUser){
+               const email = sponsorUser.email;
+               const id = req.body.transaction_id;
+                 if(sponsorUser.status == 'Active'){
+                   //process it
+                   //For Basic Plan
+                   User.updateOne({email: email},{$set:{status: "Active+"}}, function(err){
+                     if(err){
+                       console.log(err);
+                     }else{
+                       User.updateOne({email:email}, {$set:{pending: false}}, function(error){
+                         if(error){
+                           console.log(error);
+                         }
+                       });
+                       User.updateOne({email:email}, {$set:{upgrade_id: id}}, function(error){
+                         if(error){
+                           console.log(error);
+                         }
+                       });
+                       Admin.updateOne({email:process.env.EMAIL}, {$pull:{id_activation:{transaction_id:req.body.transaction_id}}}, function(err){
+                         if(err){
+                           console.log(err)
+                         }
+                       });
+                     }
+                   });
+
+                   // Referral points
+                   User.findOne({sponID: sponsorUser.sponsorID}, function(err, firstUser){
+                     if(err){
+                       console.log(err);
+                     } else {
+                       if(firstUser){
+                         if(firstUser.status === "Active+"){
+                           User.updateOne({sponID: sponsorUser.sponsorID},
+                             {$set:{earnings:{
+                               ab:{
+                                 ri: firstUser.earnings.ab.ri,
+                                 wb: firstUser.earnings.ab.wb,
+                                 nw: firstUser.earnings.ab.nw,
+                                 ot: firstUser.earnings.ab.ot + 10,
+                                 oa: firstUser.earnings.ab.oa
+                               },
+                               te: firstUser.earnings.te + 10,
+                               ri: firstUser.earnings.ri,
+                               wb: firstUser.earnings.wb,
+                               nw: firstUser.earnings.nw,
+                               ot: firstUser.earnings.ot + 10,
+                               oa: firstUser.earnings.oa
+                             }}},  function(err){
+                             if(err){
+                               console.log(err);
+                             }
+                           });
+
+                           if(firstUser.transaction){
+                             const transaction = firstUser.transaction;
+                             const newTran = {
+                               type: 'trial-1',
+                               mode: 'credit',
+                               amount: '10',
+                               date: updated
+                             };
+                             transaction.push(newTran);
+                             User.updateOne({email: firstUser.email}, {$set:{transaction:transaction}}, function(err){
+                               if(err){
+                                 console.log(err);
+                               }
+                             });
+                           }else{
+                             const newTran = {
+                               type: 'trial-1',
+                               mode: 'credit',
+                               amount: '10',
+                               date: updated
+                             };
+                             User.updateOne({email: firstUser.email}, {$set:{transaction:newTran}}, function(err){
+                               if(err){
+                                 console.log(err);
+                               }
+                             });
+                           }
+
+                         }
+
+
+                         User.findOne({sponID: firstUser.sponsorID}, function(err, secondUser){
+                           if(err){
+                             console.log(err);
+                           }else{
+                             if(secondUser){
+                               if(secondUser.status === "Active+"){
+                                 User.updateOne({sponID: firstUser.sponsorID},
+                                   {$set:{earnings:{
+                                     ab:{
+                                       ri: secondUser.earnings.ab.ri,
+                                       wb: secondUser.earnings.ab.wb,
+                                       nw: secondUser.earnings.ab.nw,
+                                       ot: secondUser.earnings.ab.ot + 10,
+                                       oa: secondUser.earnings.ab.oa
+                                     },
+                                     te: secondUser.earnings.te + 10,
+                                     ri: secondUser.earnings.ri,
+                                     wb: secondUser.earnings.wb,
+                                     nw: secondUser.earnings.nw,
+                                     ot: secondUser.earnings.ot + 10,
+                                     oa: secondUser.earnings.oa
+                                   }}},  function(err){
+                                   if(err){
+                                     console.log(err);
+                                   }
+                                 });
+
+                                 if(secondUser.transaction){
+                                   const transaction = secondUser.transaction;
+                                   const newTran = {
+                                     type: 'trial-2',
+                                     mode: 'credit',
+                                     amount: '10',
+                                     date: updated
+                                   };
+                                   transaction.push(newTran);
+                                   User.updateOne({email: secondUser.email}, {$set:{transaction:transaction}}, function(err){
+                                     if(err){
+                                       console.log(err);
+                                     }
+                                   });
+                                 }else{
+                                   const newTran = {
+                                     type: 'trial-2',
+                                     mode: 'credit',
+                                     amount: '10',
+                                     date: updated
+                                   };
+                                   User.updateOne({email: secondUser.email}, {$set:{transaction:newTran}}, function(err){
+                                     if(err){
+                                       console.log(err);
+                                     }
+                                   });
+                                 }
+                               }
+
+                               //Third User
+                               User.findOne({sponID:secondUser.sponsorID}, function(err, thirdUser){
+                                 if(err){
+                                   console.log(err);
+                                 }else{
+                                   if(thirdUser){
+                                     if(thirdUser.status === "Active+"){
+                                       User.updateOne({sponID: secondUser.sponsorID},
+                                         {$set:{earnings:{
+                                           ab:{
+                                             ri: thirdUser.earnings.ab.ri,
+                                             wb: thirdUser.earnings.ab.wb,
+                                             nw: thirdUser.earnings.ab.nw,
+                                             ot: thirdUser.earnings.ab.ot + 10,
+                                             oa: thirdUser.earnings.ab.oa
+                                           },
+                                           te: thirdUser.earnings.te + 10,
+                                           ri: thirdUser.earnings.ri,
+                                           wb: thirdUser.earnings.wb,
+                                           nw: thirdUser.earnings.nw,
+                                           ot: thirdUser.earnings.ot + 10,
+                                           oa: thirdUser.earnings.oa
+                                         }}},  function(err){
+                                         if(err){
+                                           console.log(err);
+                                         }
+                                       });
+
+
+                                       if(thirdUser.transaction){
+                                         const transaction = thirdUser.transaction;
+                                         const newTran = {
+                                           type: 'trial-3',
+                                           mode: 'credit',
+                                           amount: '10',
+                                           date: updated
+                                         };
+                                         transaction.push(newTran);
+                                         User.updateOne({email: thirdUser.email}, {$set:{transaction:transaction}}, function(err){
+                                           if(err){
+                                             console.log(err);
+                                           }
+                                         });
+                                       }else{
+                                         const newTran = {
+                                           type: 'trial-3',
+                                           mode: 'credit',
+                                           amount: '10',
+                                           date: updated
+                                         };
+                                         User.updateOne({email: thirdUser.email}, {$set:{transaction:newTran}}, function(err){
+                                           if(err){
+                                             console.log(err);
+                                           }
+                                         });
+                                       }
+                                     }
+
+                                     //Fourth User
+                                     User.findOne({sponID:thirdUser.sponsorID}, function(err, fourthUser){
+                                       if(err){
+                                         console.log(err);
+                                       }else{
+                                         if(fourthUser){
+                                           if(fourthUser.status === "Active+"){
+                                             User.updateOne({sponID: thirdUser.sponsorID},
+                                               {$set:{earnings:{
+                                                 ab:{
+                                                   ri: fourthUser.earnings.ab.ri,
+                                                   wb: fourthUser.earnings.ab.wb,
+                                                   nw: fourthUser.earnings.ab.nw,
+                                                   ot: fourthUser.earnings.ab.ot + 1,
+                                                   oa: fourthUser.earnings.ab.oa
+                                                 },
+                                                 te: fourthUser.earnings.te + 1,
+                                                 ri: fourthUser.earnings.ri,
+                                                 wb: fourthUser.earnings.wb,
+                                                 nw: fourthUser.earnings.nw,
+                                                 ot: fourthUser.earnings.ot + 1,
+                                                 oa: fourthUser.earnings.oa
+                                               }}},  function(err){
+                                               if(err){
+                                                 console.log(err);
+                                               }
+                                             });
+
+
+                                             if(fourthUser.transaction){
+                                               const transaction = fourthUser.transaction;
+                                               const newTran = {
+                                                 type: 'network-1',
+                                                 mode: 'credit',
+                                                 amount: '1',
+                                                 date: updated
+                                               };
+                                               transaction.push(newTran);
+                                               User.updateOne({email: fourthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                 if(err){
+                                                   console.log(err);
+                                                 }
+                                               });
+                                             }else{
+                                               const newTran = {
+                                                 type: 'network-1',
+                                                 mode: 'credit',
+                                                 amount: '1',
+                                                 date: updated
+                                               };
+                                               User.updateOne({email: fourthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                 if(err){
+                                                   console.log(err);
+                                                 }
+                                               });
+                                             }
+                                           }
+
+
+                                           //Fifth User
+                                           User.findOne({sponID:fourthUser.sponsorID}, function(err, fifthUser){
+                                             if(err){
+                                               console.log(err);
+                                             }else{
+                                               if(fifthUser){
+                                                 if(fifthUser.status === "Active+"){
+                                                   User.updateOne({sponID: fourthUser.sponsorID},
+                                                     {$set:{earnings:{
+                                                       ab:{
+                                                         ri: fifthUser.earnings.ab.ri,
+                                                         wb: fifthUser.earnings.ab.wb,
+                                                         nw: fifthUser.earnings.ab.nw,
+                                                         ot: fifthUser.earnings.ab.ot + 1,
+                                                         oa: fifthUser.earnings.ab.oa
+                                                       },
+                                                       te: fifthUser.earnings.te + 1,
+                                                       ri: fifthUser.earnings.ri,
+                                                       wb: fifthUser.earnings.wb,
+                                                       nw: fifthUser.earnings.nw,
+                                                       ot: fifthUser.earnings.ot + 1,
+                                                       oa: fifthUser.earnings.oa
+                                                     }}},  function(err){
+                                                     if(err){
+                                                       console.log(err);
+                                                     }
+                                                   });
+
+
+                                                   if(fifthUser.transaction){
+                                                     const transaction = fifthUser.transaction;
+                                                     const newTran = {
+                                                       type: 'network-2',
+                                                       mode: 'credit',
+                                                       amount: '1',
+                                                       date: updated
+                                                     };
+                                                     transaction.push(newTran);
+                                                     User.updateOne({email: fifthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                       if(err){
+                                                         console.log(err);
+                                                       }
+                                                     });
+                                                   }else{
+                                                     const newTran = {
+                                                       type: 'network-2',
+                                                       mode: 'credit',
+                                                       amount: '1',
+                                                       date: updated
+                                                     };
+                                                     User.updateOne({email: fifthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                       if(err){
+                                                         console.log(err);
+                                                       }
+                                                     });
+                                                   }
+                                                 }
+
+                                                 //Sixth User
+                                                 User.findOne({sponID:fifthUser.sponsorID}, function(err, sixthUser){
+                                                   if(err){
+                                                     console.log(err);
+                                                   }else{
+                                                     if(sixthUser){
+                                                       if(sixthUser.status === "Active+"){
+                                                         User.updateOne({sponID: fifthUser.sponsorID},
+                                                           {$set:{earnings:{
+                                                             ab:{
+                                                               ri: sixthUser.earnings.ab.ri,
+                                                               wb: sixthUser.earnings.ab.wb,
+                                                               nw: sixthUser.earnings.ab.nw,
+                                                               ot: sixthUser.earnings.ab.ot + 1,
+                                                               oa: sixthUser.earnings.ab.oa
+                                                             },
+                                                             te: sixthUser.earnings.te + 1,
+                                                             ri: sixthUser.earnings.ri,
+                                                             wb: sixthUser.earnings.wb,
+                                                             nw: sixthUser.earnings.nw,
+                                                             ot: sixthUser.earnings.ot + 1,
+                                                             oa: sixthUser.earnings.oa
+                                                           }}},  function(err){
+                                                           if(err){
+                                                             console.log(err);
+                                                           }
+                                                         });
+
+
+                                                         if(sixthUser.transaction){
+                                                           const transaction = sixthUser.transaction;
+                                                           const newTran = {
+                                                             type: 'network-3',
+                                                             mode: 'credit',
+                                                             amount: '1',
+                                                             date: updated
+                                                           };
+                                                           transaction.push(newTran);
+                                                           User.updateOne({email: sixthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                             if(err){
+                                                               console.log(err);
+                                                             }
+                                                           });
+                                                         }else{
+                                                           const newTran = {
+                                                             type: 'network-3',
+                                                             mode: 'credit',
+                                                             amount: '1',
+                                                             date: updated
+                                                           };
+                                                           User.updateOne({email: sixthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                             if(err){
+                                                               console.log(err);
+                                                             }
+                                                           });
+                                                         }
+                                                       }
+
+                                                       //Seveth User
+                                                       User.findOne({sponID:sixthUser.sponsorID}, function(err, seventhUser){
+                                                         if(err){
+                                                           console.log(err);
+                                                         }else{
+                                                           if(seventhUser){
+                                                             if(seventhUser.status === "Active+"){
+                                                               User.updateOne({sponID: sixthUser.sponsorID},
+                                                                 {$set:{earnings:{
+                                                                   ab:{
+                                                                     ri: seventhUser.earnings.ab.ri,
+                                                                     wb: seventhUser.earnings.ab.wb,
+                                                                     nw: seventhUser.earnings.ab.nw,
+                                                                     ot: seventhUser.earnings.ab.ot + 1,
+                                                                     oa: seventhUser.earnings.ab.oa
+                                                                   },
+                                                                   te: seventhUser.earnings.te + 1,
+                                                                   ri: seventhUser.earnings.ri,
+                                                                   wb: seventhUser.earnings.wb,
+                                                                   nw: seventhUser.earnings.nw,
+                                                                   ot: seventhUser.earnings.ot + 1,
+                                                                   oa: seventhUser.earnings.oa
+                                                                 }}},  function(err){
+                                                                 if(err){
+                                                                   console.log(err);
+                                                                 }
+                                                               });
+
+
+                                                               if(seventhUser.transaction){
+                                                                 const transaction = seventhUser.transaction;
+                                                                 const newTran = {
+                                                                   type: 'network-4',
+                                                                   mode: 'credit',
+                                                                   amount: '1',
+                                                                   date: updated
+                                                                 };
+                                                                 transaction.push(newTran);
+                                                                 User.updateOne({email: seventhUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                                   if(err){
+                                                                     console.log(err);
+                                                                   }
+                                                                 });
+                                                               }else{
+                                                                 const newTran = {
+                                                                   type: 'network-4',
+                                                                   mode: 'credit',
+                                                                   amount: '1',
+                                                                   date: updated
+                                                                 };
+                                                                 User.updateOne({email: seventhUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                                   if(err){
+                                                                     console.log(err);
+                                                                   }
+                                                                 });
+                                                               }
+                                                             }
+
+                                                             //Eighth User
+                                                             User.findOne({sponID:seventhUser.sponsorID}, function(err, eighthUser){
+                                                               if(err){
+                                                                 console.log(err);
+                                                               }else{
+                                                                 if(eighthUser){
+                                                                   if(eighthUser.status === "Active+"){
+                                                                     User.updateOne({sponID: seventhUser.sponsorID},
+                                                                       {$set:{earnings:{
+                                                                         ab:{
+                                                                           ri: eighthUser.earnings.ab.ri,
+                                                                           wb: eighthUser.earnings.ab.wb,
+                                                                           nw: eighthUser.earnings.ab.nw,
+                                                                           ot: eighthUser.earnings.ab.ot + 1,
+                                                                           oa: eighthUser.earnings.ab.oa
+                                                                         },
+                                                                         te: eighthUser.earnings.te + 1,
+                                                                         ri: eighthUser.earnings.ri,
+                                                                         wb: eighthUser.earnings.wb,
+                                                                         nw: eighthUser.earnings.nw,
+                                                                         ot: eighthUser.earnings.ot + 1,
+                                                                         oa: eighthUser.earnings.oa
+                                                                       }}},  function(err){
+                                                                       if(err){
+                                                                         console.log(err);
+                                                                       }
+                                                                     });
+
+
+                                                                     if(eighthUser.transaction){
+                                                                       const transaction = eighthUser.transaction;
+                                                                       const newTran = {
+                                                                         type: 'network-5',
+                                                                         mode: 'credit',
+                                                                         amount: '1',
+                                                                         date: updated
+                                                                       };
+                                                                       transaction.push(newTran);
+                                                                       User.updateOne({email: eighthUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                                         if(err){
+                                                                           console.log(err);
+                                                                         }
+                                                                       });
+                                                                     }else{
+                                                                       const newTran = {
+                                                                         type: 'network-5',
+                                                                         mode: 'credit',
+                                                                         amount: '1',
+                                                                         date: updated
+                                                                       };
+                                                                       User.updateOne({email: eighthUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                                         if(err){
+                                                                           console.log(err);
+                                                                         }
+                                                                       });
+                                                                     }
+                                                                   }
+
+                                                                   //Nineth User
+                                                                   User.findOne({sponID:eighthUser.sponsorID}, function(err, ninethUser){
+                                                                     if(err){
+                                                                       console.log(err);
+                                                                     }else{
+                                                                       if(ninethUser){
+                                                                         if(ninethUser.status === "Active+"){
+                                                                           User.updateOne({sponID: eighthUser.sponsorID},
+                                                                             {$set:{earnings:{
+                                                                               ab:{
+                                                                                 ri: ninethUser.earnings.ab.ri,
+                                                                                 wb: ninethUser.earnings.ab.wb,
+                                                                                 nw: ninethUser.earnings.ab.nw,
+                                                                                 ot: ninethUser.earnings.ab.ot + 1,
+                                                                                 oa: ninethUser.earnings.ab.oa
+                                                                               },
+                                                                               te: ninethUser.earnings.te + 1,
+                                                                               ri: ninethUser.earnings.ri,
+                                                                               wb: ninethUser.earnings.wb,
+                                                                               nw: ninethUser.earnings.nw,
+                                                                               ot: ninethUser.earnings.ot + 1,
+                                                                               oa: ninethUser.earnings.oa
+                                                                             }}},  function(err){
+                                                                             if(err){
+                                                                               console.log(err);
+                                                                             }
+                                                                           });
+
+
+                                                                           if(ninethUser.transaction){
+                                                                             const transaction = ninethUser.transaction;
+                                                                             const newTran = {
+                                                                               type: 'network-6',
+                                                                               mode: 'credit',
+                                                                               amount: '1',
+                                                                               date: updated
+                                                                             };
+                                                                             transaction.push(newTran);
+                                                                             User.updateOne({email: ninethUser.email}, {$set:{transaction:transaction}}, function(err){
+                                                                               if(err){
+                                                                                 console.log(err);
+                                                                               }
+                                                                             });
+                                                                           }else{
+                                                                             const newTran = {
+                                                                               type: 'network-6',
+                                                                               mode: 'credit',
+                                                                               amount: '1',
+                                                                               date: updated
+                                                                             };
+                                                                             User.updateOne({email: ninethUser.email}, {$set:{transaction:newTran}}, function(err){
+                                                                               if(err){
+                                                                                 console.log(err);
+                                                                               }
+                                                                             });
+                                                                           }
+                                                                         }
+                                                                       }
+                                                                     }
+                                                                   });
+                                                                 }
+                                                               }
+                                                             });
+                                                           }
+                                                         }
+                                                       });
+                                                     }
+                                                   }
+                                                 });
+                                               }
+                                             }
+                                           });
+                                         }
+                                       }
+                                     });
+                                   }
+                                 }
+                               });
+                             }
+                           }
+                         });
+                       }
+                     }
+                   });
+                 }
+             }
+            }
+          })
+      }
+    }else{
+      User.updateOne({email:req.body.email}, {$set:{pending: false}}, function(error){
+        if(error){
+          console.log(error);
+        }else{
+          Admin.updateOne({email:process.env.EMAIL}, {$pull:{id_activation:{transaction_id:req.body.transaction_id}}}, function(err){
+            if(err){
+              console.log(err)
+            }
+          });
+        }
+      });
+    }
+
+    res.redirect('/naanthaDa')
   }
 });
 

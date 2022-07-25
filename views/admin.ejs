@@ -175,6 +175,44 @@
               <!-- All users on date -->
               <div class="row gx-4">
                 <div class="col mx-2 text-center">
+
+                  <div class="" id="id_activation">
+                  <%  if(typeof id_activation !== 'undefined'){ %>
+                      <% id_activation.forEach(function(id){ %>
+
+                        <div class="">
+                          <form class="" action="/api/id_activation" method="post">
+                            <label for=""> Email</label>
+                            <p class=" text-dark text-uppercase text-sm">
+                              <%= id.email %>
+                            </p>
+                            <label for="">Transaction ID</label>
+                            <p class=" text-dark text-uppercase text-sm">
+                              <%=id.transaction_id %>
+                            </p>
+                            <input type="text" hidden name="email" value="<%=id.email%>">
+                            <input type="text" hidden name="transaction_id" value="<%=id.transaction_id %>">
+                            <input type="text" hidden name="status" value="<%=id.status%>">
+                            <input type="text" hidden name="activate" value="success">
+                            <div class="col">
+                              <button type="submit" class="btn btn-block badge text-uppercase text-center btn-success" name="button"><%=id.status%></button>
+                            </div>
+                          </form>
+                          <form class="" action="/api/id_activation" method="POST">
+                            <input type="text" hidden name="email" value="<%=id.email%>">
+                            <input type="text" hidden name="transaction_id" value="<%=id.transaction_id %>">
+                            <input type="text" hidden name="status" value="<%=id.status%>">
+                            <input type="text" hidden name="activate" value="fail">
+                            <div class="col">
+                              <button type="submit" class="btn btn-block badge text-uppercase text-center btn-danger" name="button">Cancel</button>
+                            </div>
+                          </form>
+                          <hr class="horizontal dark">
+                        </div>
+                      <% }) %>
+                  <%  } %>
+
+                  </div>
                    <div class="card">
                      <div class="card-body">
                        <form class="" action="/users" method="post">

@@ -203,6 +203,9 @@
                 <h6>Payment portal</h6>
               </div>
               <div class="card-body ">
+                <div class="" id="alert">
+
+                </div>
                 <%  if(typeof alert != 'undefined'){  %>
 
                     <div class="alert text-white alert-<%= alert.alertType %> alert-dismissible fade show" role="alert">
@@ -211,19 +214,38 @@
                     </div>
 
                 <%  } %>
+                <%  if(typeof pending != 'undefined'){  %>
 
-                <div class="text-center">
-                <div id="pay">
-                  <label for="">Status</label>
-                  <p class=" text-dark text-uppercase text-sm" id="status">
-                    <%=status %>
-                  </p>
-                    <button  class="btn btn-sm btn-success " onclick="createCharge()">
-                      Activate
-                    </button >
+                  <div class="text-center">
+                    <p hidden id="userEmail"><%=user.email%></p>
+                  <div id="pay">
+                    <label for="">Status</label>
+                    <p class=" text-dark text-uppercase text-sm" id="status">
+                      <%=status %>
+                    </p>
+                      <button  class="btn btn-sm btn-success " onclick="pending()">
+                        Activate
+                      </button >
 
+                    </div>
                   </div>
-                </div>
+
+                <%  }else{ %>
+                    <div class="text-center">
+                      <p hidden id="userEmail"><%=user.email%></p>
+                    <div id="pay">
+                      <label for="">Status</label>
+                      <p class=" text-dark text-uppercase text-sm" id="status">
+                        <%=status %>
+                      </p>
+                        <button  class="btn btn-sm btn-success " onclick="createCharge()">
+                          Activate
+                        </button >
+
+                      </div>
+                    </div>
+                <% } %>
+
               </div>
 
               </div>
@@ -241,6 +263,9 @@
                 <h6>Payment portal</h6>
               </div>
               <div class="card-body ">
+                <div class="" id="alert">
+
+                </div>
                 <%  if(typeof alert != 'undefined'){  %>
 
                     <div class="alert text-white alert-<%= alert.alertType %> alert-dismissible fade show" role="alert">
@@ -250,18 +275,37 @@
 
                 <%  } %>
 
-                <div class="text-center">
+                <%  if(typeof pending != 'undefined'){  %>
+
+                  <div class="text-center">
+                    <p hidden id="userEmail"><%=user.email%></p>
                   <div id="pay">
                     <label for="">Status</label>
                     <p class=" text-dark text-uppercase text-sm" id="status">
                       <%=status %>
                     </p>
-                      <button  class="btn btn-sm btn-success " onclick="createCharge()">
+                      <button  class="btn btn-sm btn-success " onclick="pending()">
                         Upgrade
                       </button >
 
                     </div>
-              </div>
+                  </div>
+
+                <%  }else{ %>
+                    <div class="text-center">
+                      <p hidden id="userEmail"><%=user.email%></p>
+                    <div id="pay">
+                      <label for="">Status</label>
+                      <p class=" text-dark text-uppercase text-sm" id="status">
+                        <%=status %>
+                      </p>
+                        <button  class="btn btn-sm btn-success " onclick="createCharge()">
+                          Upgrade
+                        </button >
+
+                      </div>
+                    </div>
+                <% } %>
               </div>
               </div>
             </div>
@@ -340,11 +384,12 @@
   <script>
          const btn = document.getElementById('btn');
          const pay = document.getElementById('pay');
+         const alert = document.getElementById('alert');
 
          const createCharge = function() {
            $.ajax({
                type: 'GET',
-               url: 'https://cr3-24.com/api/createPackage',
+               url: 'http://localhost:3000/api/createPackage',
                dataType: "json"
            }).done(function(res){
                data =  res;
@@ -353,12 +398,94 @@
                    ${data.metadata.email}
                  </p>
                  <label for="">Package details</label>
-                 <p class=" text-dark text-uppercase text-sm" id="status">
+                 <p class=" text-dark text-uppercase text-sm">
                    ${data.name}
                  </p>
-                 <a class="btn btn-sm btn-danger mt-3" href="${data.hosted_url}"> Confirm and Pay</a>`
+                 <label for="">Amount payable</label>
+                 <p class=" text-dark text-uppercase text-sm" id="amount">
+                   ${data.pricing.local.amount}$
+                 </p>
+                 <hr class="horizontal dark">
+                 <a class="btn btn-sm btn-danger mt-3" href="${data.hosted_url}"> Pay with Crypto</a>
+                 <hr class="horizontal dark">
+                 <a class="btn btn-sm btn-success mt-3" onclick="upi()"> Pay with UPI</a>
+                 `
+
+
+
            });
          }
+
+         const validate = function(){
+           $.ajax({
+               type: 'POST',
+               url: 'http://localhost:3000/api/validate_transaction',
+               data: {
+                 transaction_id: document.getElementById('transaction_id').value,
+                 email: document.getElementById('userEmail').innerHTML
+               },
+               dataType: "json"
+           }).done(function(res){
+               data =  res;
+               if(data.validation == 'success'){
+                 pay.innerHTML = `  <div>
+                   <img src="../assets/img/pending.png" class="text-center w-40 mb-3" alt="">
+                 </div>
+                   <p class=" text-dark text-uppercase text-sm" id="status">
+                    Your request will be processed after the payment conformation.
+                   </p>
+
+                   `
+               }else{
+                 alert.innerHTML = `
+                  <div class="alert text-white alert-warning alert-dismissible fade show" role="alert">
+                    <span><label for=""> Upi id is no longer valid!</label> </span>
+                    <button type="button" class="btn-close text-dark" data-bs-dismiss="alert" aria-label="Close">&times</button>
+                  </div>
+
+                   `
+
+               }
+
+           });
+         }
+
+         const upi = function(){
+           if(typeof status == 'Active'){
+           pay.innerHTML = `
+            <img src="../assets/img/activate.png" class="w-100">
+             <hr class="horizontal dark mt-0">
+             <label for="">Enter Upi Ref/UTR number below</label>
+             <form class="">
+               <input type="number" required class="form_control" autocomplete="off" id="transaction_id" name="transaction_id" value="">
+               <button type="button" class="btn btn-sm btn-primary mt-3" onclick="validate()" name="button">Validate</button>
+             </form>
+
+             `
+           }else{
+           pay.innerHTML = `
+            <img src="../assets/img/upgrade.png" class="w-100">
+             <hr class="horizontal dark mt-0">
+             <label for="">Enter Upi Ref/UTR number below</label>
+             <form class="">
+               <input type="number" required class="form_control" autocomplete="off" id="transaction_id" name="transaction_id" value="">
+               <button type="button" class="btn btn-sm btn-primary mt-3" onclick="validate()" name="button">Validate</button>
+             </form>
+
+             `
+           }
+         }
+
+         const pending = function(){
+           pay.innerHTML = `  <div>
+             <img src="../assets/img/pending.png" class="text-center w-40 mb-3" alt="">
+           </div>
+             <p class=" text-dark text-uppercase text-sm" id="status">
+              Your request will be processed after the payment conformation.
+             </p>
+
+             `
+          }
   </script>
   <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
